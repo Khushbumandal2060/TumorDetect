@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Dashboard - Tumor Detection System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+            background: #f9f9f9;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        a {
+            text-decoration: none;
+            color: white;
+            background: #47043d;
+            padding: 12px 25px;
+            border-radius: 5px;
+            margin: 0 10px;
+            display: inline-block;
+        }
+
+        a:hover {
+            background: #321127;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Dashboard</h1>
+    <p>Welcome, {{ username }}!</p>
+    <p><a href="{{ url_for('logout') }}">Logout</a></p>
+</body>
+
+</html>

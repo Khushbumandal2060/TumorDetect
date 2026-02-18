@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>About Us - Tumor Detection System</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body { height: 100%; }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background: #f9f9f9;
+        }
+
+        /* Navbar */
+        .navbar {
+            background: #5b054d;
+            color: white;
+            padding: 15px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin-left: 10px;
+            padding: 8px 15px;
+            border-radius: 4px;
+        }
+
+        .navbar a:hover { background: #450342; }
+
+        /* Text container */
+        .container {
+            max-width: 900px;
+            margin: 60px auto 15px auto; /* top margin to avoid navbar */
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .container h2 {
+            color: #1e1212;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .container p {
+            line-height: 1.6;
+            color: #0e0909;
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        /* Images container */
+        .image-container {
+            max-width: 1000px;
+            margin: 15px auto 40px auto;
+            display: flex;
+            justify-content: space-between; /* even spacing */
+            gap: 30px;
+        }
+
+        .image-container img {
+            width: 32%; /* three images side by side */
+            height: 200px; /* reduced height */
+            border-radius: 8px;
+            box-shadow: 0 0 8px rgba(0,0,0,0.1);
+            object-fit: cover; /* ensures aspect ratio is maintained */
+        }
+
+        @media (max-width: 900px) {
+            .image-container img { width: 48%; }
+        }
+
+        @media (max-width: 600px) {
+            .image-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+            .image-container img { width: 100%; height: auto; }
+        }
+
+        /* Footer */
+        footer {
+            background: #333;
+            color: white;
+            text-align: center;
+            padding: 15px 0;
+            margin-top: auto;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <div class="navbar">
+        <h1>Tumor_Detect</h1>
+        <div>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('aboutus') }}">About Us</a>
+            <a href="{{ url_for('contact') }}">Contact Us</a>
+            {% if session.get('user_id') %}
+                <a href="{{ url_for('dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('logout') }}">Logout</a>
+            {% else %}
+                <a href="{{ url_for('signup') }}">Signup</a>
+                <a href="{{ url_for('login') }}">Login</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- About Us Section -->
+    <div class="container">
+        <h2>About Us</h2>
+        <p>
+            The Tumor Detection System is a web application designed to help users detect and monitor brain tumors using
+            advanced AI algorithms. Our mission is to provide accurate, easy-to-use, and accessible medical support tools for everyone.
+        </p>
+        <p>
+            This system combines image preprocessing, data visualization, transfer learning, model building, and Flask deployment
+            to make tumor detection accessible online. Users can upload MRI images and get clear, AI-generated results.
+        </p>
+    </div>
+
+    <!-- Images Section -->
+    <div class="image-container">
+        <img src="{{ url_for('static', filename='images/tumor1.jpg') }}" alt="Image 1">
+        <img src="{{ url_for('static', filename='images/tumor2.jpeg') }}" alt="Image 2">
+        <img src="{{ url_for('static', filename='images/tumor3.png') }}" alt="Image 3">
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        &copy; 2026 Brain Tumor Detection System. All rights reserved.
+    </footer>
+
+</body>
+</html>
