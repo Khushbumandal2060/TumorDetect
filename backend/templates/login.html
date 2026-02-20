@@ -1,113 +1,148 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+    <meta charset="UTF-8">
     <title>Login - Tumor Detection System</title>
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
     <style>
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-        }
-
-        html, body {
-            height: 100%;
         }
 
         body {
-            font-family: Arial, sans-serif;
-            background: #f9f9f9;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to right, #f8f9fa, #eef2f3);
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
         }
 
-        /* Navbar */
+        /* ---------- Navbar ---------- */
         .navbar {
-            background: #64053c;
-            color: white;
-            padding: 15px 10px;
+            background: #6a0572;
+            padding: 15px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
+        .navbar h2 {
+            color: white;
+        }
+
         .navbar a {
             color: white;
             text-decoration: none;
-            margin-left: 10px;
-            padding: 8px 15px;
-            border-radius: 4px;
+            margin-left: 20px;
+            font-weight: 500;
+            transition: 0.3s;
         }
 
         .navbar a:hover {
-            background: #450342;
+            opacity: 0.8;
         }
 
-        /* Center content */
+        /* ---------- Main Section ---------- */
         .main {
             flex: 1;
             display: flex;
             justify-content: center;
             align-items: center;
+            padding: 20px;
         }
 
         .container {
             background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            width: 350px;
+            padding: 35px;
+            width: 380px;
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
         }
 
-        h2 {
+        .container h3 {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            color: #333;
         }
 
-        input {
+        input[type="email"],
+        input[type="password"] {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             margin-bottom: 15px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #6a0572;
         }
 
         button {
             width: 100%;
-            padding: 10px;
-            background: #530431;
+            padding: 12px;
+            background: #6a0572;
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
+            font-weight: 600;
             cursor: pointer;
+            transition: 0.3s;
         }
 
         button:hover {
-            background: #401035;
+            background: #4a034f;
         }
 
         .flash {
             padding: 10px;
+            border-radius: 6px;
             margin-bottom: 15px;
-            border-radius: 4px;
+            font-size: 14px;
         }
 
         .error {
             background: #f8d7da;
-            color: #721c24;
+            color: #842029;
         }
 
         .success {
-            background: #d4edda;
-            color: #155724;
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .login-links {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .login-links a {
+            color: #6a0572;
+            text-decoration: none;
+            font-weight: 500;
         }
 
         /* Footer */
         footer {
-            background: #333;
+            background: #222;
             color: white;
             text-align: center;
-            padding: 15px 0;
+            padding: 12px 0;
+            font-size: 14px;
+        }
+
+        @media(max-width: 420px) {
+            .container {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -116,7 +151,7 @@
 
     <!-- Navbar -->
     <div class="navbar">
-        <h1>Tumor_Detect</h1>
+        <h2>Tumor Detection System</h2>
         <div>
             <a href="{{ url_for('home') }}">Home</a>
             <a href="{{ url_for('aboutus') }}">About Us</a>
@@ -125,11 +160,12 @@
         </div>
     </div>
 
-    <!-- Login Form -->
+    <!-- Main Content -->
     <div class="main">
         <div class="container">
-            <h2>Login</h2>
+            <h3>Login</h3>
 
+            <!-- Flash messages -->
             {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
             {% for category, message in messages %}
@@ -138,22 +174,39 @@
             {% endif %}
             {% endwith %}
 
+            <!-- Login Form -->
             <form method="POST" action="{{ url_for('login') }}">
-                <input type="email" name="email" placeholder="Email" required>
+                <input type="email" name="email" placeholder="Email Address" required>
                 <input type="password" name="password" placeholder="Password" required>
+
+                <!-- Remember Me -->
+                <div style="margin-bottom:15px;">
+                    <label>
+                        <input type="checkbox" name="remember"> Remember Me
+                    </label>
+                </div>
+
                 <button type="submit">Login</button>
             </form>
 
-            <p style="text-align:center;margin-top:10px;">
+            <!-- Forgot Password Link -->
+            <div class="login-links">
+                <a href="{{ url_for('forgot_password') }}">Forgot Password?</a>
+            </div>
+
+            <!-- Signup Link -->
+            <div class="login-links">
                 Don't have an account? <a href="{{ url_for('signup') }}">Signup</a>
-            </p>
+            </div>
+
         </div>
     </div>
 
     <!-- Footer -->
     <footer>
-        &copy; 2026 Brain Tumor Detection System. All rights reserved.
+        © 2026 Brain Tumor Detection System | All Rights Reserved
     </footer>
 
 </body>
+
 </html>
