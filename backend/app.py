@@ -40,7 +40,7 @@ def home():
 def aboutus():
     return render_template('aboutus.html')
 
-@app.route('/contact')
+@app.route('/contactus')
 def contact():
     return render_template('contact.html')
 
@@ -54,8 +54,6 @@ def send_message():
     return redirect(url_for('contact'))
 
 
-
-
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
@@ -64,6 +62,13 @@ def signup():
         password = request.form['password']
         confirm_password = request.form['confirm_password']
 
+        # --------- 1️⃣ Add password length check here ---------
+        if len(password) <6:
+            flash("Password must be at least 6 characters long!", "error")
+            return redirect(url_for('signup'))
+        # ------------------------------------------------------
+
+        # Check if passwords match
         if password != confirm_password:
             flash("Passwords do not match!", "error")
             return redirect(url_for('signup'))
@@ -108,6 +113,7 @@ def login():
             return redirect(url_for('login'))
 
     return render_template('login.html')
+
 
 @app.route('/dashboard')
 def dashboard():
