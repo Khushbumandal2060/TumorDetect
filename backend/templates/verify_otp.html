@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Verify OTP - Tumor Detection System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f9f9f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 350px;
+            text-align: center;
+        }
+
+        input,
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background: #70075d;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #470e3d;
+        }
+
+        .flash {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #a61c40;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .timer {
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #70075d;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Verify OTP</h2>
+
+        <p class="timer">OTP expires in <span id="countdown">60</span> seconds</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('verify_otp') }}">
+            <input type="text" name="otp" placeholder="Enter OTP" required>
+            <button type="submit">Verify OTP</button>
+        </form>
+
+        <p style="text-align:center;"><a href="{{ url_for('forgot_password') }}">Resend OTP</a></p>
+    </div>
+
+    <script>
+        let timeLeft = 60;
+        const countdown = document.getElementById('countdown');
+
+        const timer = setInterval(() => {
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                countdown.innerHTML = "Expired!";
+            } else {
+                countdown.innerHTML = timeLeft;
+            }
+            timeLeft -= 1;
+        }, 1000);
+    </script>
+</body>
+
+</html>
