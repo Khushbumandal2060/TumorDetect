@@ -2,14 +2,26 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 import os
-import smtplib
 import random
+import smtplib
 from email.message import EmailMessage
+from dotenv import load_dotenv
+from datetime import datetime, timedelta
+
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'  # Needed for flash messages and sessions
+app.secret_key = 'your_secret_key'
+
+# Make session permanent for 7 days if remember me checked
+app.permanent_session_lifetime = 604800  # 7 days in seconds
 
 DB_NAME = 'database.db'
+
+# Get email credentials from .env
+EMAIL_ADDRESS = os.getenv("EMAIL_USER")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASS")
 
 # ---------------- DATABASE CONNECTION ----------------
 def get_db_connection():
@@ -39,6 +51,7 @@ create_table()
 def home():
     return render_template('home.html')
 
+
 @app.route('/aboutus')
 def aboutus():
     return render_template('aboutus.html')
@@ -52,7 +65,28 @@ def send_message():
     name = request.form['name']
     email = request.form['email']
     message = request.form['message']
-    flash("Thank you! We received your message.", "success")
+
+    msg = EmailMessage()
+    msg['Subject'] = f"New Contact Form Message from {name}"
+    msg['From'] = EMAIL_ADDRESS   # Your admin email
+    msg['To'] = EMAIL_ADDRESS     # Admin receives it
+    msg.set_content(f"""
+    You have received a new message from your website contact form.
+
+    Name: {name}
+    Email: {email}
+    Message:
+    {message}
+    """)
+
+    try:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            smtp.send_message(msg)
+        flash("Your message has been sent successfully!", "success")
+    except Exception as e:
+        flash(f"Failed to send message. Error: {e}", "error")
+
     return redirect(url_for('contact'))
 
 # ---------------- SIGNUP ----------------
@@ -64,7 +98,6 @@ def signup():
         password = request.form['password']
         confirm_password = request.form['confirm_password']
 
-        # Password length check
         if len(password) < 6:
             flash("Password must be at least 6 characters long!", "error")
             return redirect(url_for('signup'))
@@ -108,8 +141,10 @@ def login():
         if user and check_password_hash(user['password'], password):
             session['user_id'] = user['id']
             session['username'] = user['username']
+
             if remember:
                 session.permanent = True
+
             flash(f"Welcome, {user['username']}!", "success")
             return redirect(url_for('dashboard'))
         else:
@@ -139,7 +174,6 @@ def forgot_password():
     if request.method == 'POST':
         email = request.form['email']
 
-        # Check if user exists
         conn = get_db_connection()
         user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
         conn.close()
@@ -148,24 +182,23 @@ def forgot_password():
             flash("Email not registered!", "error")
             return redirect(url_for('forgot_password'))
 
-        # Generate OTP
         otp = random.randint(100000, 999999)
-        session['otp'] = otp
+        session['otp'] = str(otp)
         session['reset_email'] = email
+        session['otp_time'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # OTP timestamp
 
-        # Send OTP via Gmail
         try:
             msg = EmailMessage()
             msg['Subject'] = 'Brain Tumor Detection - Password Reset OTP'
-            msg['From'] = 'your_email@gmail.com'       # Replace with your Gmail
+            msg['From'] = EMAIL_ADDRESS
             msg['To'] = email
             msg.set_content(f'Your OTP for password reset is: {otp}')
 
             with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-                smtp.login('your_email@gmail.com', 'your_app_password')  # Use App Password
+                smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
                 smtp.send_message(msg)
 
-            flash("OTP sent to your email. Check your inbox.", "success")
+            flash("OTP sent to your email. Check inbox.", "success")
             return redirect(url_for('verify_otp'))
 
         except Exception as e:
@@ -179,12 +212,23 @@ def forgot_password():
 def verify_otp():
     if request.method == 'POST':
         entered_otp = request.form['otp']
-        if 'otp' in session and str(session['otp']) == entered_otp:
-            flash("OTP verified! You can reset your password now.", "success")
-            return redirect(url_for('reset_password'))
-        else:
-            flash("Invalid OTP. Try again.", "error")
-            return redirect(url_for('verify_otp'))
+
+        if 'otp' in session and 'otp_time' in session:
+            otp_time = datetime.strptime(session['otp_time'], "%Y-%m-%d %H:%M:%S")
+            now = datetime.now()
+            if now - otp_time > timedelta(minutes=1):
+                session.pop('otp', None)
+                session.pop('otp_time', None)
+                session.pop('reset_email', None)
+                flash("OTP expired. Please request a new one.", "error")
+                return redirect(url_for('forgot_password'))
+
+            if session['otp'] == entered_otp:
+                flash("OTP verified! Reset your password.", "success")
+                return redirect(url_for('reset_password'))
+            else:
+                flash("Invalid OTP. Try again.", "error")
+                return redirect(url_for('verify_otp'))
 
     return render_template('verify_otp.html')
 
@@ -194,6 +238,11 @@ def reset_password():
     if request.method == 'POST':
         password = request.form['password']
         confirm_password = request.form['confirm_password']
+        email = session.get('reset_email')
+
+        if not email:
+            flash("Session expired. Please request a new OTP.", "error")
+            return redirect(url_for('forgot_password'))
 
         if password != confirm_password:
             flash("Passwords do not match!", "error")
@@ -203,18 +252,27 @@ def reset_password():
             flash("Password must be at least 6 characters long!", "error")
             return redirect(url_for('reset_password'))
 
-        # Update password in DB
-        password_hash = generate_password_hash(password)
-        email = session.get('reset_email')
-        if email:
-            conn = get_db_connection()
-            conn.execute("UPDATE users SET password = ? WHERE email = ?", (password_hash, email))
-            conn.commit()
+        conn = get_db_connection()
+        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+
+        # Check if new password is same as old password
+        if user and check_password_hash(user['password'], password):
             conn.close()
-            session.pop('otp', None)
-            session.pop('reset_email', None)
-            flash("Password reset successful! You can now login.", "success")
-            return redirect(url_for('login'))
+            flash("New password shouldn't match the old. Please choose a different password.", "error")
+            return redirect(url_for('reset_password'))
+
+        password_hash = generate_password_hash(password)
+        conn.execute("UPDATE users SET password = ? WHERE email = ?", (password_hash, email))
+        conn.commit()
+        conn.close()
+
+        # Clear OTP session
+        session.pop('otp', None)
+        session.pop('otp_time', None)
+        session.pop('reset_email', None)
+
+        flash("Password reset successful! You can login now.", "success")
+        return redirect(url_for('login'))
 
     return render_template('reset_password.html')
 
