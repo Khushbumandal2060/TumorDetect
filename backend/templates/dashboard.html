@@ -1,41 +1,165 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-    <title>Dashboard - Tumor Detection System</title>
+    <title>User Dashboard</title>
     <style>
         body {
+            margin: 0;
             font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
             text-align: center;
-            padding: 50px;
-            background: #f9f9f9;
+            font-size: 28px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
-        h1 {
-            color: #333;
-            margin-bottom: 20px;
+        .container {
+            display: flex;
         }
 
-        a {
-            text-decoration: none;
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: white;
+            height: 100vh;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+
+        .sidebar h3 {
+            margin-top: 20px;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar ul li {
+            padding: 8px 0;
+            cursor: pointer;
+        }
+
+        .sidebar ul li:hover {
+            color: #007bff;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 30px;
+        }
+
+        .image-preview {
+            background: black;
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+        }
+
+        .image-preview img {
+            height: 200px;
+            border-radius: 10px;
+        }
+
+        .cards {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            flex: 1;
+            text-align: center;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+        }
+
+        .upload-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #007bff;
             color: white;
-            background: #47043d;
-            padding: 12px 25px;
-            border-radius: 5px;
-            margin: 0 10px;
-            display: inline-block;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
         }
 
-        a:hover {
-            background: #321127;
+        .upload-btn:hover {
+            background: #0056b3;
+        }
+
+        .logout {
+            display: block;
+            margin-top: 30px;
+            text-decoration: none;
+            color: red;
         }
     </style>
 </head>
-
 <body>
-    <h1>Dashboard</h1>
-    <p>Welcome, {{ username }}!</p>
-    <p><a href="{{ url_for('logout') }}">Logout</a></p>
-</body>
 
+<div class="header">
+    Load MRI Images Dataset
+</div>
+
+<div class="container">
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h3>User Panel</h3>
+        <ul>
+            <li>Dashboard</li>
+            <li>Upload MRI</li>
+            <li>Prediction History</li>
+            <li>Profile</li>
+        </ul>
+
+        <a href="{{ url_for('logout') }}" class="logout">Logout</a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+
+        <h2>Welcome, {{ user['username'] }} 👋</h2>
+
+        <!-- Image Preview Section -->
+        <div class="image-preview">
+            <img src="{{ url_for('static', filename='sample1.jpg') }}">
+            <img src="{{ url_for('static', filename='sample2.jpg') }}">
+            <img src="{{ url_for('static', filename='sample3.jpg') }}">
+        </div>
+
+        <!-- Upload Button -->
+        <button class="upload-btn">Upload MRI Image</button>
+
+        <!-- Cards -->
+        <div class="cards">
+            <div class="card">
+                <h3>Total Uploads</h3>
+                <p>15</p>
+            </div>
+            <div class="card">
+                <h3>Predictions Made</h3>
+                <p>12</p>
+            </div>
+            <div class="card">
+                <h3>Status</h3>
+                <p>{{ 'Verified' if user['verified'] else 'Pending' }}</p>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+</body>
 </html>
