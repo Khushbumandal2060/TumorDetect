@@ -276,6 +276,62 @@ def reset_password():
 
     return render_template('reset_password.html')
 
+# ---------------- ADMIN CREDENTIALS ----------------
+ADMIN_USERNAME = os.getenv("ADMIN_USER") or "admin@example.com"
+ADMIN_PASSWORD = os.getenv("ADMIN_PASS") or "Admin123"
+
+# ---------------- ADMIN LOGIN ----------------
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+
+        if email == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+            session['admin_logged_in'] = True
+            flash("Admin logged in successfully!", "success")
+            return redirect(url_for('admin_dashboard'))
+        else:
+            flash("Invalid admin credentials!", "error")
+            return redirect(url_for('admin_login'))
+
+    return render_template('admin_login.html')
+
+# ---------------- ADMIN DASHBOARD ----------------
+@app.route('/admin/dashboard')
+def admin_dashboard():
+    if not session.get('admin_logged_in'):
+        flash("Please log in as admin!", "error")
+        return redirect(url_for('admin_login'))
+
+    conn = get_db_connection()
+    users = conn.execute("SELECT id, username, email FROM users").fetchall()
+    conn.close()
+
+    return render_template('admin_dashboard.html', users=users)
+
+# ---------------- DELETE USER ----------------
+@app.route('/admin/delete_user/<int:user_id>')
+def delete_user(user_id):
+    if not session.get('admin_logged_in'):
+        flash("Please log in as admin!", "error")
+        return redirect(url_for('admin_login'))
+
+    conn = get_db_connection()
+    conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+    flash("User deleted successfully!", "success")
+    return redirect(url_for('admin_dashboard'))
+
+# ---------------- ADMIN LOGOUT ----------------
+@app.route('/admin/logout')
+def admin_logout():
+    session.pop('admin_logged_in', None)
+    flash("Admin logged out successfully!", "success")
+    return redirect(url_for('admin_login'))
+
 # ---------------- RUN APP ----------------
 if __name__ == '__main__':
     app.run(debug=True)
