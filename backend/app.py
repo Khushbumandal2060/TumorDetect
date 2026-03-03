@@ -31,18 +31,30 @@ def get_db_connection():
 
 # ---------------- CREATE TABLE ----------------
 def create_table():
-    if not os.path.exists(DB_NAME):
-        conn = get_db_connection()
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT NOT NULL,
-                email TEXT NOT NULL UNIQUE,
-                password TEXT NOT NULL
-            )
-        """)
-        conn.commit()
-        conn.close()
+    conn = get_db_connection()
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            email TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL,
+            verified INTEGER DEFAULT 0
+        )
+    """)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS mri_uploads (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            filename TEXT,
+            upload_time TEXT,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+    """)
+
+    conn.commit()
+    conn.close()
 
 create_table()
 
@@ -153,14 +165,32 @@ def login():
 
     return render_template('login.html')
 
-# ---------------- DASHBOARD ----------------
 @app.route('/dashboard')
 def dashboard():
     if 'user_id' not in session:
         flash("Please log in first!", "error")
         return redirect(url_for('login'))
-    return render_template('dashboard.html', username=session['username'])
 
+    conn = get_db_connection()
+
+    user = conn.execute(
+        "SELECT * FROM users WHERE id = ?",
+        (session['user_id'],)
+    ).fetchone()
+
+    uploads = conn.execute(
+        "SELECT * FROM mri_uploads WHERE user_id = ?",
+        (session['user_id'],)
+    ).fetchall()
+
+    conn.close()
+
+    return render_template(
+        'dashboard.html',
+        user=user,
+        uploads=uploads,
+        total_uploads=len(uploads)
+    )
 # ---------------- LOGOUT ----------------
 @app.route('/logout')
 def logout():
@@ -301,14 +331,17 @@ def admin_login():
 @app.route('/admin/dashboard')
 def admin_dashboard():
     if not session.get('admin_logged_in'):
-        flash("Please log in as admin!", "error")
         return redirect(url_for('admin_login'))
 
     conn = get_db_connection()
-    users = conn.execute("SELECT id, username, email FROM users").fetchall()
+    users = conn.execute(
+        "SELECT id, username, email, verified FROM users"
+    ).fetchall()
     conn.close()
 
     return render_template('admin_dashboard.html', users=users)
+
+
 
 # ---------------- DELETE USER ----------------
 @app.route('/admin/delete_user/<int:user_id>')
@@ -324,6 +357,8 @@ def delete_user(user_id):
 
     flash("User deleted successfully!", "success")
     return redirect(url_for('admin_dashboard'))
+
+
 
 # ---------------- ADMIN LOGOUT ----------------
 @app.route('/admin/logout')
