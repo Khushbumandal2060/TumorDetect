@@ -1,165 +1,119 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <title>User Dashboard</title>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
     <style>
         body {
+            font-family: Arial;
             margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f4f6f9;
+            background: #f4f7f9;
         }
 
-        .header {
-            background: white;
-            padding: 20px;
-            text-align: center;
-            font-size: 28px;
-            font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        .container {
-            display: flex;
-        }
-
-        /* Sidebar */
         .sidebar {
-            width: 250px;
-            background: white;
+            width: 220px;
+            background: #4f0843;
+            color: white;
             height: 100vh;
-            padding: 20px;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            float: left;
         }
 
-        .sidebar h3 {
-            margin-top: 20px;
-        }
-
-        .sidebar ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .sidebar ul li {
-            padding: 8px 0;
-            cursor: pointer;
-        }
-
-        .sidebar ul li:hover {
-            color: #007bff;
-        }
-
-        /* Main Content */
-        .main-content {
-            flex: 1;
-            padding: 30px;
-        }
-
-        .image-preview {
-            background: black;
+        .sidebar a {
+            display: block;
+            color: white;
             padding: 15px;
-            border-radius: 10px;
-            display: flex;
-            gap: 15px;
-            overflow-x: auto;
+            text-decoration: none;
         }
 
-        .image-preview img {
-            height: 200px;
-            border-radius: 10px;
+        .sidebar a:hover {
+            background: #0a0120;
         }
 
-        .cards {
-            margin-top: 30px;
-            display: flex;
-            gap: 20px;
-        }
-
-        .card {
-            background: white;
+        .main {
+            margin-left: 220px;
             padding: 20px;
-            border-radius: 10px;
-            flex: 1;
-            text-align: center;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
         }
 
-        .upload-btn {
-            margin-top: 20px;
+        .upload-form {
+            margin-bottom: 30px;
+        }
+
+        input[type=file] {
+            padding: 10px;
+        }
+
+        button {
             padding: 10px 20px;
-            background: #007bff;
+            background: #4f0843;
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 5px;
             cursor: pointer;
         }
 
-        .upload-btn:hover {
-            background: #0056b3;
+        .uploads img {
+            max-width: 150px;
+            margin: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
         }
 
-        .logout {
-            display: block;
-            margin-top: 30px;
-            text-decoration: none;
+        .flash {
             color: red;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .flash.success {
+            color: green;
         }
     </style>
 </head>
+
 <body>
 
-<div class="header">
-    Load MRI Images Dataset
-</div>
-
-<div class="container">
-
-    <!-- Sidebar -->
     <div class="sidebar">
-        <h3>User Panel</h3>
-        <ul>
-            <li>Dashboard</li>
-            <li>Upload MRI</li>
-            <li>Prediction History</li>
-            <li>Profile</li>
-        </ul>
-
-        <a href="{{ url_for('logout') }}" class="logout">Logout</a>
+        <h2 style="text-align:center;">Menu</h2>
+        <a href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('testing') }}">Testing</a>
+        <a href="{{ url_for('training') }}">Traning</a>
+        <a href="{{ url_for('logout') }}">Logout</a>
     </div>
 
-    <!-- Main Content -->
-    <div class="main-content">
+    <div class="main">
+        <h1>Welcome, {{ user['username'] }}</h1>
 
-        <h2>Welcome, {{ user['username'] }} 👋</h2>
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
 
-        <!-- Image Preview Section -->
-        <div class="image-preview">
-            <img src="{{ url_for('static', filename='sample1.jpg') }}">
-            <img src="{{ url_for('static', filename='sample2.jpg') }}">
-            <img src="{{ url_for('static', filename='sample3.jpg') }}">
+        <!-- Upload Form -->
+        <div class="upload-form">
+            <form method="POST" enctype="multipart/form-data">
+                <input type="file" name="mri_image" required>
+                <button type="submit">Upload MRI</button>
+            </form>
         </div>
 
-        <!-- Upload Button -->
-        <button class="upload-btn">Upload MRI Image</button>
-
-        <!-- Cards -->
-        <div class="cards">
-            <div class="card">
-                <h3>Total Uploads</h3>
-                <p>15</p>
+        <!-- Uploaded Images Preview -->
+        <h2>Uploaded MRIs</h2>
+        <div class="uploads">
+            {% for upload in uploads %}
+            <div>
+                <img src="{{ url_for('static', filename='uploads/' + upload['filename']) }}" alt="MRI Image">
+                <p>Uploaded: {{ upload['upload_time'] }}</p>
+                <p>Prediction: {{ upload.get('prediction', 'Pending') }}</p>
             </div>
-            <div class="card">
-                <h3>Predictions Made</h3>
-                <p>12</p>
-            </div>
-            <div class="card">
-                <h3>Status</h3>
-                <p>{{ 'Verified' if user['verified'] else 'Pending' }}</p>
-            </div>
+            {% endfor %}
         </div>
-
     </div>
-</div>
 
 </body>
+
 </html>
