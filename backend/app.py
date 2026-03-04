@@ -38,8 +38,8 @@ def create_table():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL,
             email TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL,
-            verified INTEGER DEFAULT 0
+            password TEXT NOT NULL
+    
         )
     """)
 
@@ -311,7 +311,7 @@ ADMIN_USERNAME = os.getenv("ADMIN_USER") or "admin@example.com"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASS") or "Admin123"
 
 # ---------------- ADMIN LOGIN ----------------
-@app.route('/admin/login', methods=['GET', 'POST'])
+@app.route('/admin', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
         email = request.form['email']
@@ -334,9 +334,7 @@ def admin_dashboard():
         return redirect(url_for('admin_login'))
 
     conn = get_db_connection()
-    users = conn.execute(
-        "SELECT id, username, email, verified FROM users"
-    ).fetchall()
+    users = conn.execute("SELECT id, username, email FROM users").fetchall()
     conn.close()
 
     return render_template('admin_dashboard.html', users=users)
