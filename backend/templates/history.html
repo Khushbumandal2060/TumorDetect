@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Upload History</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container mt-5">
+
+        <h2 class="mb-4">Your Upload History</h2>
+
+        {% if uploads %}
+        <div class="row">
+            {% for upload in uploads %}
+            <div class="col-md-4 mb-3">
+                <div class="card shadow-sm">
+                    <img src="{{ url_for('static', filename='uploads/' ~ upload.filename) }}" class="card-img-top"
+                        alt="MRI Image">
+                    <div class="card-body">
+                        <h5 class="card-title">Prediction: {{ upload.predicted_label }}</h5>
+                        <p class="card-text"><i class="bi bi-clock"></i> {{ upload.uploaded_at }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p>You haven't uploaded any MRI scans yet.</p>
+        {% endif %}
+
+    </div>
+</body>
+
+</html>
