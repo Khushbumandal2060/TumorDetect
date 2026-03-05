@@ -3,6 +3,7 @@
 
 <head>
     <title>About Us - Brain Tumor Detection System</title>
+
     <style>
         * {
             margin: 0;
@@ -10,124 +11,160 @@
             box-sizing: border-box;
         }
 
-        html,
-        body {
-            height: 100%;
-        }
-
         body {
             display: flex;
             flex-direction: column;
             min-height: 100vh;
             font-family: Arial, sans-serif;
-            background: #f9f9f9;
+
+            /* Pastel Background */
+            background: #f6e9f6;
         }
 
         /* Navbar */
+
         .navbar {
-            background: #5b054d;
+            background: #63065b;
             color: white;
-            padding: 15px 10px;
+            padding: 15px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         }
 
         .navbar a {
             color: white;
             text-decoration: none;
-            margin-left: 10px;
+            margin-left: 12px;
             padding: 8px 15px;
-            border-radius: 4px;
+            border-radius: 6px;
+            transition: 0.3s;
         }
 
         .navbar a:hover {
-            background: #450342;
+            background: #7a2a74;
         }
 
-        /* Text container */
+        /* About container */
+
         .container {
             max-width: 900px;
-            margin: 60px auto 15px auto;
-            /* top margin to avoid navbar */
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin: 60px auto 20px auto;
+            padding: 30px;
+
+            /* Pastel card */
+            background: #ffffff;
+
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
         }
 
         .container h2 {
-            color: #1e1212;
-            margin-bottom: 15px;
+            color: #5b054d;
+            margin-bottom: 20px;
             text-align: center;
         }
 
         .container p {
-            line-height: 1.6;
-            color: #0e0909;
+            line-height: 1.7;
+            color: #333;
             margin-bottom: 15px;
             text-align: justify;
         }
 
-        /* Images container */
+        /* Image section */
+
         .image-container {
+
             max-width: 1000px;
-            margin: 15px auto 40px auto;
+            margin: 20px auto 40px auto;
+
             display: flex;
-            justify-content: space-between;
-            /* even spacing */
-            gap: 30px;
+            justify-content: center;
+            gap: 25px;
+
+            padding: 20px;
+
+            /* pastel background */
+            background: #efe3f3;
+
+            border-radius: 10px;
         }
 
         .image-container img {
+
             width: 32%;
-            /* three images side by side */
             height: 200px;
-            /* reduced height */
-            border-radius: 8px;
-            box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+
+            border-radius: 10px;
+
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+
             object-fit: cover;
-            /* ensures aspect ratio is maintained */
+
+            transition: 0.3s;
         }
 
-        @media (max-width: 900px) {
+        .image-container img:hover {
+            transform: scale(1.05);
+        }
+
+        /* Responsive */
+
+        @media(max-width:900px) {
+
             .image-container img {
                 width: 48%;
             }
+
         }
 
-        @media (max-width: 600px) {
+        @media(max-width:600px) {
+
             .image-container {
                 flex-direction: column;
-                gap: 15px;
             }
 
             .image-container img {
                 width: 100%;
                 height: auto;
             }
+
         }
 
         /* Footer */
+
         footer {
-            background: #333;
+
+            background: #650660;
             color: white;
+
             text-align: center;
-            padding: 15px 0;
+
+            padding: 15px;
+
             margin-top: auto;
+
         }
     </style>
+
 </head>
 
 <body>
 
     <!-- Navbar -->
+
     <div class="navbar">
+
         <h1>Tumor_Detect</h1>
+
         <div>
+
             <a href="{{ url_for('home') }}">Home</a>
             <a href="{{ url_for('aboutus') }}">About Us</a>
             <a href="{{ url_for('contact') }}">Contact Us</a>
+
             {% if session.get('user_id') %}
             <a href="{{ url_for('dashboard') }}">Dashboard</a>
             <a href="{{ url_for('logout') }}">Logout</a>
@@ -135,34 +172,52 @@
             <a href="{{ url_for('signup') }}">Signup</a>
             <a href="{{ url_for('login') }}">Login</a>
             {% endif %}
+
         </div>
+
     </div>
 
-    <!-- About Us Section -->
+
+    <!-- About Us -->
+
     <div class="container">
+
         <h2>About Us</h2>
+
         <p>
-            This Tumor Detection System is a web application designed to help users detect and monitor brain tumors using
+            This Tumor Detection System is a web application designed to help users detect and monitor brain tumors
+            using
             advanced AI algorithms. Our mission is to provide accurate, easy-to-use, and accessible medical support
-            tools for everyone.
+            tools
+            for everyone.
         </p>
+
         <p>
             This system combines image preprocessing, data visualization, transfer learning, model building, and Flask
-            deployment
-            to make tumor detection accessible online. Users can upload MRI images and get clear, AI-generated results.
+            deployment to make tumor detection accessible online. Users can upload MRI images and receive AI-generated
+            results quickly and easily.
         </p>
+
     </div>
 
-    <!-- Images Section -->
+
+    <!-- Images -->
+
     <div class="image-container">
-        <img src="{{ url_for('static', filename='images/tumor1.jpg') }}" alt="Image 1">
-        <img src="{{ url_for('static', filename='images/tumor2.jpeg') }}" alt="Image 2">
-        <img src="{{ url_for('static', filename='images/tumor3.png') }}" alt="Image 3">
+
+        <img src="{{ url_for('static', filename='images/tumor1.jpg') }}">
+        <img src="{{ url_for('static', filename='images/tumor2.jpeg') }}">
+        <img src="{{ url_for('static', filename='images/tumor3.png') }}">
+
     </div>
+
 
     <!-- Footer -->
+
     <footer>
+
         &copy; 2026 Brain Tumor Detection System. All rights reserved.
+
     </footer>
 
 </body>
