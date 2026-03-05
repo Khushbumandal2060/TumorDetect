@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Profile</title>
     <!-- Font Awesome & Bootstrap Icons -->
@@ -73,7 +74,7 @@
         .profile-card {
             background: white;
             border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             padding: 40px 30px;
             width: 100%;
             max-width: 500px;
@@ -155,53 +156,53 @@
                 display: none;
             }
         }
-
     </style>
 </head>
 
 <body>
-<div class="container">
+    <div class="container">
 
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <h2>MRI AI</h2>
-        <a href="/dashboard"><i class="fa-solid fa-house"></i><span>Dashboard</span></a>
-        <a href="/predict"><i class="fa-solid fa-brain"></i><span>Predict MRI</span></a>
-        <a href="/history"><i class="fa-solid fa-folder-open"></i><span>Upload History</span></a>
-        <a href="/profile"><i class="fa-solid fa-user"></i><span>Profile</span></a>
-        <a href="/logout"><i class="fa-solid fa-door-open"></i><span>Logout</span></a>
-    </div>
-
-    <!-- Main -->
-    <div class="main">
-        <div class="header">
-            Profile - {{ user.username }}
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h2>MRI AI</h2>
+            <a href="/dashboard"><i class="fa-solid fa-house"></i><span>Dashboard</span></a>
+            <a href="/predict"><i class="fa-solid fa-brain"></i><span>Predict MRI</span></a>
+            <a href="/history"><i class="fa-solid fa-folder-open"></i><span>Upload History</span></a>
+            <a href="/profile"><i class="fa-solid fa-user"></i><span>Profile</span></a>
+            <a href="/logout"><i class="fa-solid fa-door-open"></i><span>Logout</span></a>
         </div>
 
-        <div class="profile-card">
-            <!-- Icon -->
-            <div class="profile-icon">
-                <i class="bi bi-person-circle"></i>
+        <!-- Main -->
+        <div class="main">
+            <div class="header">
+                Profile - {{ user.username }}
             </div>
 
-            <h3>Update Your Profile</h3>
+            <div class="profile-card">
+                <!-- Icon -->
+                <div class="profile-icon">
+                    <i class="bi bi-person-circle"></i>
+                </div>
 
-            {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
+                <h3>Update Your Profile</h3>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
                 {% for category, message in messages %}
-                    <p class="message">{{ message }}</p>
+                <p class="message">{{ message }}</p>
                 {% endfor %}
-            {% endif %}
-            {% endwith %}
+                {% endif %}
+                {% endwith %}
 
-            <form method="POST">
-                <input type="text" name="username" value="{{ user.username }}" placeholder="Username" required>
-                <input type="email" name="email" value="{{ user.email }}" placeholder="Email" required>
-                <input type="password" name="password" placeholder="New Password (leave blank to keep current)">
-                <button type="submit" class="btn">Update Profile</button>
-            </form>
+                <form method="POST">
+                    <input type="text" name="username" value="{{ user.username }}" placeholder="Username" required>
+                    <input type="email" name="email" value="{{ user.email }}" placeholder="Email" required>
+                    <input type="password" name="password" placeholder="New Password (leave blank to keep current)">
+                    <button type="submit" class="btn">Update Profile</button>
+                </form>
+            </div>
         </div>
     </div>
-</div>
 </body>
+
 </html>
