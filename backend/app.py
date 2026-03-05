@@ -7,12 +7,17 @@ import smtplib
 from email.message import EmailMessage
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
+from werkzeug.utils import secure_filename
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'
+app.secret_key = os.getenv("SECRET_KEY")
+
+# Step 1: Define upload folder
+UPLOAD_FOLDER = os.path.join('static', 'uploads')  # Folder where uploaded images will be saved
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)   
 
 # Make session permanent for 7 days if remember me checked
 app.permanent_session_lifetime = 604800  # 7 days in seconds
@@ -44,14 +49,15 @@ def create_table():
     """)
 
     conn.execute("""
-        CREATE TABLE IF NOT EXISTS mri_uploads (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            filename TEXT,
-            upload_time TEXT,
-            FOREIGN KEY(user_id) REFERENCES users(id)
-        )
-    """)
+    CREATE TABLE IF NOT EXISTS mri_uploads (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        filename TEXT,
+        uploaded_at TEXT,
+        predicted_label TEXT,
+        FOREIGN KEY(user_id) REFERENCES users(id)
+    )
+""")
 
     conn.commit()
     conn.close()
@@ -191,6 +197,96 @@ def dashboard():
         uploads=uploads,
         total_uploads=len(uploads)
     )
+
+#------------PREDICT MRI IMAGE----------------
+@app.route('/predict', methods=['GET', 'POST'])
+def predict():
+    if 'user_id' not in session:
+        flash("Please log in first!", "error")
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        file = request.files.get('mri_image')
+        if not file:
+            flash("Please upload an image.", "error")
+            return redirect(request.url)
+
+        # Step 1: Save uploaded file
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(filepath)
+
+        # Step 2: Call AI model (replace with your function)
+        predicted_label = your_ai_model_predict(filepath)
+
+        # Step 3: Save prediction to database with timestamp
+        conn = get_db_connection()
+        uploaded_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        conn.execute(
+            "INSERT INTO mri_uploads (user_id, filename, predicted_label, uploaded_at) VALUES (?, ?, ?, ?)",
+            (session['user_id'], filename, predicted_label, uploaded_at)
+        )
+        conn.commit()
+        conn.close()
+
+        flash(f"Prediction: {predicted_label}", "success")
+        return render_template('predict.html', result=predicted_label, filename=filename)
+
+    return render_template('predict.html')
+#-----------------UPLOAD HISTORY----------------
+@app.route('/history')
+def history():
+    if 'user_id' not in session:
+        flash("Please log in first!", "error")
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    uploads = conn.execute(
+        "SELECT * FROM mri_uploads WHERE user_id = ? ORDER BY uploaded_at DESC",
+        (session['user_id'],)
+    ).fetchall()
+    conn.close()
+
+    return render_template('history.html', uploads=uploads)
+
+#---------PROFILE-----
+@app.route('/profile', methods=['GET', 'POST'])
+def profile():
+    if 'user_id' not in session:
+        flash("Please log in first!", "error")
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    user = conn.execute(
+        "SELECT * FROM users WHERE id = ?",
+        (session['user_id'],)
+    ).fetchone()
+
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+
+        if password:  # Only update password if entered
+            hashed_password = generate_password_hash(password)
+            conn.execute(
+                "UPDATE users SET username = ?, email = ?, password = ? WHERE id = ?",
+                (username, email, hashed_password, session['user_id'])
+            )
+        else:
+            conn.execute(
+                "UPDATE users SET username = ?, email = ? WHERE id = ?",
+                (username, email, session['user_id'])
+            )
+
+        conn.commit()
+        conn.close()
+        flash("Profile updated successfully!", "success")
+        return redirect(url_for('profile'))
+
+    conn.close()
+    return render_template('profile.html', user=user)
+
 # ---------------- LOGOUT ----------------
 @app.route('/logout')
 def logout():
