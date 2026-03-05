@@ -5,6 +5,7 @@
     <title>Predict MRI</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
             margin: 0;
@@ -12,14 +13,15 @@
             background: #f4f6f9;
         }
 
-        .container {
+        .container-main {
             display: flex;
-            height: 100vh;
+            min-height: 100vh;
         }
 
+        /* Sidebar */
         .sidebar {
             width: 240px;
-            background: #49052e;
+            background: #480434;
             color: white;
             padding-top: 25px;
         }
@@ -46,43 +48,32 @@
         }
 
         .sidebar a:hover {
-            background: #042147;
+            background: #051a4e;
             padding-left: 30px;
         }
 
+        /* Main content */
         .main {
             flex: 1;
             padding: 40px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
         }
 
         .header {
             font-size: 28px;
             font-weight: 600;
-            margin-bottom: 20px;
-            color: #440530;
+            margin-bottom: 30px;
+            color: #520622;
         }
 
-        .card {
+        .card-upload,
+        .card-result {
             background: white;
             border-radius: 15px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             padding: 40px 30px;
-            width: 100%;
-            max-width: 500px;
+            max-width: 600px;
+            margin: 0 auto 30px auto;
             text-align: center;
-            transition: transform 0.2s;
-        }
-
-        .card:hover {
-            transform: translateY(-3px);
-        }
-
-        .card h3 {
-            margin-bottom: 25px;
-            color: #500635;
         }
 
         input[type="file"] {
@@ -92,8 +83,8 @@
             width: 100%;
         }
 
-        .btn {
-            background: #51053c;
+        .btn-detect {
+            background: #450344;
             color: white;
             padding: 12px;
             border: none;
@@ -104,8 +95,8 @@
             transition: background 0.3s, transform 0.2s;
         }
 
-        .btn:hover {
-            background: #042146;
+        .btn-detect:hover {
+            background: #031f44;
             transform: translateY(-2px);
         }
 
@@ -117,8 +108,7 @@
         }
 
         .message {
-            text-align: center;
-            color: rgb(43, 135, 181);
+            color: rgb(11, 67, 127);
             margin-bottom: 15px;
             font-weight: 500;
         }
@@ -126,22 +116,24 @@
 </head>
 
 <body>
-    <div class="container">
+    <div class="container-main">
         <!-- Sidebar -->
         <div class="sidebar">
             <h2>MRI AI</h2>
             <a href="{{ url_for('dashboard') }}"><i class="fa-solid fa-house"></i>Dashboard</a>
             <a href="{{ url_for('predict') }}"><i class="fa-solid fa-brain"></i>Predict MRI</a>
             <a href="{{ url_for('history') }}"><i class="fa-solid fa-folder-open"></i>Upload History</a>
-            <a href="{{ url_for('profile') }}"><i class="fa-solid fa-user"></i>Profile</a>
-            <a href="{{ url_for('logout') }}"><i class="fa-solid fa-door-open"></i>Logout</a>
+            <a href="/profile"><i class="fa-solid fa-user"></i>Profile</a>
+            <a href="/logout"><i class="fa-solid fa-door-open"></i>Logout</a>
         </div>
 
         <!-- Main -->
         <div class="main">
             <div class="header">Predict Brain Tumor</div>
-            <div class="card">
-                <h3>Upload MRI Image</h3>
+
+            <!-- Upload Card -->
+            <div class="card-upload">
+                <h4>Upload MRI Image</h4>
 
                 {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
@@ -153,16 +145,21 @@
 
                 <form method="POST" enctype="multipart/form-data">
                     <input type="file" name="mri_image" accept="image/*" required>
-                    <button type="submit" class="btn">Upload & Predict</button>
+                    <button type="submit" class="btn-detect">Upload & Detect</button>
                 </form>
+            </div>
 
-                {% if result %}
-                <h3>Prediction Result: {{ result }}</h3>
+            <!-- Result Card -->
+            {% if result %}
+            <div class="card-result">
+                <h4>Prediction Result</h4>
+                <p class="message">{{ result }}</p>
                 {% if filename %}
-                <img class="uploaded" src="{{ url_for('static', filename='uploads/' + filename) }}">
-                {% endif %}
+                <img src="{{ url_for('static', filename='uploads/' + filename) }}" class="uploaded">
                 {% endif %}
             </div>
+            {% endif %}
+
         </div>
     </div>
 </body>
