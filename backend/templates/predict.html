@@ -19,7 +19,7 @@
 
         .sidebar {
             width: 240px;
-            background: #2b6cb0;
+            background: #49052e;
             color: white;
             padding-top: 25px;
         }
@@ -46,7 +46,7 @@
         }
 
         .sidebar a:hover {
-            background: #1e4f8f;
+            background: #042147;
             padding-left: 30px;
         }
 
@@ -62,7 +62,7 @@
             font-size: 28px;
             font-weight: 600;
             margin-bottom: 20px;
-            color: #2b6cb0;
+            color: #440530;
         }
 
         .card {
@@ -82,7 +82,7 @@
 
         .card h3 {
             margin-bottom: 25px;
-            color: #2b6cb0;
+            color: #500635;
         }
 
         input[type="file"] {
@@ -93,7 +93,7 @@
         }
 
         .btn {
-            background: #2b6cb0;
+            background: #51053c;
             color: white;
             padding: 12px;
             border: none;
@@ -105,7 +105,7 @@
         }
 
         .btn:hover {
-            background: #1e4f8f;
+            background: #042146;
             transform: translateY(-2px);
         }
 
@@ -118,7 +118,7 @@
 
         .message {
             text-align: center;
-            color: green;
+            color: rgb(43, 135, 181);
             margin-bottom: 15px;
             font-weight: 500;
         }
@@ -130,11 +130,11 @@
         <!-- Sidebar -->
         <div class="sidebar">
             <h2>MRI AI</h2>
-            <a href="/dashboard"><i class="fa-solid fa-house"></i>Dashboard</a>
-            <a href="/predict"><i class="fa-solid fa-brain"></i>Predict MRI</a>
-            <a href="/history"><i class="fa-solid fa-folder-open"></i>Upload History</a>
-            <a href="/profile"><i class="fa-solid fa-user"></i>Profile</a>
-            <a href="/logout"><i class="fa-solid fa-door-open"></i>Logout</a>
+            <a href="{{ url_for('dashboard') }}"><i class="fa-solid fa-house"></i>Dashboard</a>
+            <a href="{{ url_for('predict') }}"><i class="fa-solid fa-brain"></i>Predict MRI</a>
+            <a href="{{ url_for('history') }}"><i class="fa-solid fa-folder-open"></i>Upload History</a>
+            <a href="{{ url_for('profile') }}"><i class="fa-solid fa-user"></i>Profile</a>
+            <a href="{{ url_for('logout') }}"><i class="fa-solid fa-door-open"></i>Logout</a>
         </div>
 
         <!-- Main -->
