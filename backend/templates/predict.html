@@ -21,7 +21,7 @@
         /* Sidebar */
         .sidebar {
             width: 240px;
-            background: #480434;
+            background: #450336;
             color: white;
             padding-top: 25px;
         }
@@ -48,7 +48,7 @@
         }
 
         .sidebar a:hover {
-            background: #051a4e;
+            background: #4a034f;
             padding-left: 30px;
         }
 
@@ -84,7 +84,7 @@
         }
 
         .btn-detect {
-            background: #450344;
+            background: #450336;
             color: white;
             padding: 12px;
             border: none;
@@ -96,7 +96,7 @@
         }
 
         .btn-detect:hover {
-            background: #031f44;
+            background: #4a034f;
             transform: translateY(-2px);
         }
 
@@ -153,7 +153,7 @@
             {% if result %}
             <div class="card-result">
                 <h4>Prediction Result</h4>
-                <p class="message">{{ result }}</p>
+                <p class="message"><strong>{{ result }}</strong> (Confidence: {{ confidence }}%)</p>
                 {% if filename %}
                 <img src="{{ url_for('static', filename='uploads/' + filename) }}" class="uploaded">
                 {% endif %}
