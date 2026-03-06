@@ -1,3 +1,6 @@
+from tensorflow.keras.models import load_model
+import numpy as np
+from tensorflow.keras.preprocessing import image
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
@@ -8,6 +11,32 @@ from email.message import EmailMessage
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
+
+# ---------------- AI MODEL PREDICTION ----------------
+import numpy as np
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing import image
+
+def predict_tumor(img_path):
+
+    img = image.load_img(img_path, target_size=(224,224))
+    img_array = image.img_to_array(img)
+    img_array = img_array / 255.0
+    img_array = np.expand_dims(img_array, axis=0)
+
+    prediction = model.predict(img_array)[0][0]
+
+    if prediction > 0.5:
+        result = "Tumor Detected"
+        confidence = round(prediction * 100, 2)
+    else:
+        result = "No Tumor"
+        confidence = round((1 - prediction) * 100, 2)
+
+    return result, confidence
+
+# Load the model once at startup
+model = load_model("brain_tumor_model.h5")
 
 # Load environment variables
 load_dotenv()
@@ -211,28 +240,32 @@ def predict():
             flash("Please upload an image.", "error")
             return redirect(request.url)
 
-        # Step 1: Save uploaded file
         filename = secure_filename(file.filename)
         filepath = os.path.join(UPLOAD_FOLDER, filename)
         file.save(filepath)
 
-        # Step 2: Call AI model (replace with your function)
-        predicted_label = your_ai_model_predict(filepath)
+        result, confidence = predict_tumor(filepath)
 
-        # Step 3: Save prediction to database with timestamp
         conn = get_db_connection()
         uploaded_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         conn.execute(
             "INSERT INTO mri_uploads (user_id, filename, predicted_label, uploaded_at) VALUES (?, ?, ?, ?)",
-            (session['user_id'], filename, predicted_label, uploaded_at)
+            (session['user_id'], filename, result, uploaded_at)
         )
+
         conn.commit()
         conn.close()
 
-        flash(f"Prediction: {predicted_label}", "success")
-        return render_template('predict.html', result=predicted_label, filename=filename)
+        return render_template(
+            'predict.html',
+            result=result,
+            filename=filename,
+            confidence=confidence
+        )
 
     return render_template('predict.html')
+
 #-----------------UPLOAD HISTORY----------------
 @app.route('/history')
 def history():
