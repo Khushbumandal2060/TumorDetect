@@ -463,12 +463,37 @@ def admin_dashboard():
         return redirect(url_for('admin_login'))
 
     conn = get_db_connection()
-    users = conn.execute("SELECT id, username, email FROM users").fetchall()
+
+    users = conn.execute(
+        "SELECT id, username, email FROM users"
+    ).fetchall()
+
+    uploads = conn.execute(
+        """
+        SELECT mri_uploads.*, users.username 
+        FROM mri_uploads
+        JOIN users ON mri_uploads.user_id = users.id
+        ORDER BY uploaded_at DESC
+        """
+    ).fetchall()
+
+    total_users = conn.execute(
+        "SELECT COUNT(*) FROM users"
+    ).fetchone()[0]
+
+    total_uploads = conn.execute(
+        "SELECT COUNT(*) FROM mri_uploads"
+    ).fetchone()[0]
+
     conn.close()
 
-    return render_template('admin_dashboard.html', users=users)
-
-
+    return render_template(
+        'admin_dashboard.html',
+        users=users,
+        uploads=uploads,
+        total_users=total_users,
+        total_uploads=total_uploads
+    )
 
 # ---------------- DELETE USER ----------------
 @app.route('/admin/delete_user/<int:user_id>')
@@ -484,8 +509,6 @@ def delete_user(user_id):
 
     flash("User deleted successfully!", "success")
     return redirect(url_for('admin_dashboard'))
-
-
 
 # ---------------- ADMIN LOGOUT ----------------
 @app.route('/admin/logout')
