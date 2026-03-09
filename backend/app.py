@@ -13,9 +13,6 @@ from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 
 # ---------------- AI MODEL PREDICTION ----------------
-import numpy as np
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing import image
 
 def predict_tumor(img_path):
 
