@@ -97,7 +97,6 @@ create_table()
 def home():
     return render_template('home.html')
 
-
 @app.route('/aboutus')
 def aboutus():
     return render_template('aboutus.html')
