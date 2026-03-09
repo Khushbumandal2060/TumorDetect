@@ -15,23 +15,26 @@ from werkzeug.utils import secure_filename
 # ---------------- AI MODEL PREDICTION ----------------
 
 def predict_tumor(img_path):
+    try:
+        img = image.load_img(img_path, target_size=(224, 224))
+        img_array = image.img_to_array(img)
+        img_array = img_array / 255.0
+        img_array = np.expand_dims(img_array, axis=0)
 
-    img = image.load_img(img_path, target_size=(224,224))
-    img_array = image.img_to_array(img)
-    img_array = img_array / 255.0
-    img_array = np.expand_dims(img_array, axis=0)
+        prediction = model.predict(img_array)[0]  # [prob_no, prob_yes]
+        class_index = np.argmax(prediction)
 
-    prediction = model.predict(img_array)[0][0]
+        if class_index == 1:
+            result = "Tumor Detected"
+            confidence = round(prediction[1] * 100, 2)
+        else:
+            result = "No Tumor"
+            confidence = round(prediction[0] * 100, 2)
 
-    if prediction > 0.5:
-        result = "Tumor Detected"
-        confidence = round(prediction * 100, 2)
-    else:
-        result = "No Tumor"
-        confidence = round((1 - prediction) * 100, 2)
-
-    return result, confidence
-
+        return result, confidence
+    except Exception as e:
+        return "Error", 0
+    
 # Load the model once at startup
 model = load_model("brain_tumor_model.h5")
 
@@ -433,8 +436,8 @@ def reset_password():
     return render_template('reset_password.html')
 
 # ---------------- ADMIN CREDENTIALS ----------------
-ADMIN_USERNAME = os.getenv("ADMIN_USER") or "admin@example.com"
-ADMIN_PASSWORD = os.getenv("ADMIN_PASS") or "Admin123"
+ADMIN_USERNAME = os.getenv("ADMIN_USER") 
+ADMIN_PASSWORD = os.getenv("ADMIN_PASS") 
 
 # ---------------- ADMIN LOGIN ----------------
 @app.route('/admin', methods=['GET', 'POST'])
@@ -506,6 +509,8 @@ def delete_user(user_id):
 
     flash("User deleted successfully!", "success")
     return redirect(url_for('admin_dashboard'))
+
+
 
 # ---------------- ADMIN LOGOUT ----------------
 @app.route('/admin/logout')
