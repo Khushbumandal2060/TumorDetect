@@ -13,7 +13,6 @@ from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 
 # ---------------- AI MODEL PREDICTION ----------------
-
 def predict_tumor(img_path):
     try:
         img = image.load_img(img_path, target_size=(224, 224))
@@ -509,8 +508,6 @@ def delete_user(user_id):
 
     flash("User deleted successfully!", "success")
     return redirect(url_for('admin_dashboard'))
-
-
 
 # ---------------- ADMIN LOGOUT ----------------
 @app.route('/admin/logout')
