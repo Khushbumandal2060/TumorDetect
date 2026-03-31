@@ -6,11 +6,25 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+
     <style>
+        :root {
+            --primary: #1e3a8a;
+            /* navy */
+            --secondary: #7c3aed;
+            /* purple */
+            --accent: var(--secondary);
+            /* hover */
+            --light: #f1f5f9;
+            /* background */
+            --dark: #0f172a;
+            /* text dark */
+        }
+
         body {
             margin: 0;
-            font-family: Segoe UI, Arial;
-            background: #f4f6f9;
+            font-family: 'Segoe UI', Arial;
+            background: var(--light);
         }
 
         .container-main {
@@ -18,9 +32,10 @@
             min-height: 100vh;
         }
 
+        /* Sidebar */
         .sidebar {
             width: 240px;
-            background: #3d022a;
+            background: linear-gradient(180deg, var(--primary), var(--secondary));
             color: white;
             padding-top: 25px;
         }
@@ -47,10 +62,11 @@
         }
 
         .sidebar a:hover {
-            background: #4a034f;
+            background: var(--accent);
             padding-left: 30px;
         }
 
+        /* Main content */
         .main {
             flex: 1;
             padding: 40px;
@@ -60,12 +76,45 @@
             font-size: 28px;
             font-weight: 600;
             margin-bottom: 20px;
-            color: #48063b;
+            color: var(--primary);
+        }
+
+        /* Cards */
+        .card {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
         }
 
         .card-img-top {
             max-height: 200px;
             object-fit: cover;
+        }
+
+        .card-body {
+            background: white;
+        }
+
+        .card-title {
+            color: var(--secondary);
+            font-weight: 600;
+        }
+
+        .card-text {
+            color: var(--dark);
+        }
+
+        /* Empty message */
+        .no-uploads {
+            color: var(--primary);
+            font-weight: 500;
+            font-size: 16px;
         }
     </style>
 </head>
@@ -102,7 +151,7 @@
                 {% endfor %}
             </div>
             {% else %}
-            <p>You haven't uploaded any MRI scans yet.</p>
+            <p class="no-uploads">You haven't uploaded any MRI scans yet.</p>
             {% endif %}
         </div>
     </div>
