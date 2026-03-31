@@ -6,11 +6,22 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+
     <style>
+        :root {
+            --primary: #1e3a8a;
+            /* navy */
+            --secondary: #7c3aed;
+            /* purple */
+            --accent: var(--secondary);
+            --light: #f1f5f9;
+            --dark: #0f172a;
+        }
+
         body {
             margin: 0;
-            font-family: Segoe UI, Arial;
-            background: #f4f6f9;
+            font-family: 'Segoe UI', Arial;
+            background: var(--light);
         }
 
         .container-main {
@@ -21,7 +32,7 @@
         /* Sidebar */
         .sidebar {
             width: 240px;
-            background: #450336;
+            background: linear-gradient(180deg, var(--primary), var(--secondary));
             color: white;
             padding-top: 25px;
         }
@@ -48,7 +59,7 @@
         }
 
         .sidebar a:hover {
-            background: #4a034f;
+            background: var(--accent);
             padding-left: 30px;
         }
 
@@ -62,9 +73,10 @@
             font-size: 28px;
             font-weight: 600;
             margin-bottom: 30px;
-            color: #520622;
+            color: var(--primary);
         }
 
+        /* Cards */
         .card-upload,
         .card-result {
             background: white;
@@ -83,8 +95,9 @@
             width: 100%;
         }
 
+        /* Button */
         .btn-detect {
-            background: #450336;
+            background: var(--primary);
             color: white;
             padding: 12px;
             border: none;
@@ -96,7 +109,7 @@
         }
 
         .btn-detect:hover {
-            background: #4a034f;
+            background: var(--secondary);
             transform: translateY(-2px);
         }
 
@@ -108,7 +121,7 @@
         }
 
         .message {
-            color: rgb(11, 67, 127);
+            color: var(--primary);
             margin-bottom: 15px;
             font-weight: 500;
         }
@@ -117,6 +130,7 @@
 
 <body>
     <div class="container-main">
+
         <!-- Sidebar -->
         <div class="sidebar">
             <h2>MRI AI</h2>
@@ -153,7 +167,10 @@
             {% if result %}
             <div class="card-result">
                 <h4>Prediction Result</h4>
-                <p class="message"><strong>{{ result }}</strong> (Confidence: {{ confidence }}%)</p>
+                <p class="message">
+                    <strong>{{ result }}</strong> (Confidence: {{ confidence }}%)
+                </p>
+
                 {% if filename %}
                 <img src="{{ url_for('static', filename='uploads/' + filename) }}" class="uploaded">
                 {% endif %}
