@@ -6,24 +6,35 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
+        :root {
+            --primary: #1e3a8a;
+            /* navy */
+            --secondary: #7c3aed;
+            /* purple */
+            --accent: var(--secondary);
+            /* accent */
+            --light: #f1f5f9;
+            /* page background */
+            --dark: #0f172a;
+            /* dark background */
+        }
+
         body {
             margin: 0;
-            font-family: Segoe UI, Arial;
-            background: #f4f6f9;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: var(--light);
         }
 
         /* Layout */
-
         .container {
             display: flex;
             height: 100vh;
         }
 
         /* Sidebar */
-
         .sidebar {
             width: 240px;
-            background: #450336;
+            background: linear-gradient(180deg, var(--primary), var(--secondary));
             color: white;
             padding-top: 25px;
         }
@@ -44,27 +55,25 @@
         }
 
         .sidebar a:hover {
-            background: #4a034f;
+            background: var(--accent);
             padding-left: 30px;
         }
 
         /* Main */
-
         .main {
             flex: 1;
             padding: 40px;
         }
 
         /* Top heading */
-
         .header {
             font-size: 26px;
             font-weight: 600;
             margin-bottom: 20px;
+            color: var(--primary);
         }
 
         /* Cards */
-
         .cards {
             display: flex;
             gap: 20px;
@@ -72,28 +81,27 @@
         }
 
         .card {
-            background: white;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
             padding: 25px;
             border-radius: 10px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
             width: 250px;
             text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
         }
 
         .card h3 {
             margin: 10px 0;
-            color: #4a0745;
+            font-size: 18px;
         }
 
         .card p {
-            color: #555;
             font-size: 14px;
         }
 
         /* Button */
-
         .btn {
-            background: #6a0572;
+            background: var(--accent);
             color: white;
             padding: 10px 20px;
             border: none;
@@ -103,10 +111,16 @@
         }
 
         .btn:hover {
-            background: #4a034f;
+            background: var(--secondary);
+        }
+
+        @media (max-width: 900px) {
+            .cards {
+                flex-direction: column;
+                gap: 15px;
+            }
         }
     </style>
-
 </head>
 
 <body>
@@ -114,7 +128,6 @@
     <div class="container">
 
         <!-- Sidebar -->
-
         <div class="sidebar">
 
             <h2>MRI AI</h2>
@@ -127,19 +140,16 @@
 
         </div>
 
-
         <!-- Main -->
-
         <div class="main">
 
             <div class="header">
-                Welcome {{user.username}}
+                Welcome {{ user.username }}
             </div>
 
             <p>This is your Brain MRI Tumor Detection dashboard.</p>
 
             <!-- Dashboard cards -->
-
             <div class="cards">
 
                 <div class="card">
