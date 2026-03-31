@@ -8,10 +8,23 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
     <style>
+        :root {
+            --primary: #1e3a8a;
+            /* navy */
+            --secondary: #7c3aed;
+            /* purple */
+            --accent: var(--secondary);
+            /* hover */
+            --light: #f1f5f9;
+            /* background */
+            --dark: #0f172a;
+            /* text dark */
+        }
+
         body {
             margin: 0;
             font-family: "Segoe UI", Arial, sans-serif;
-            background: #f4f6f9;
+            background: var(--light);
         }
 
         /* Layout */
@@ -23,7 +36,7 @@
         /* Sidebar */
         .sidebar {
             width: 240px;
-            background: #4b0440;
+            background: linear-gradient(180deg, var(--primary), var(--secondary));
             color: white;
             padding-top: 25px;
         }
@@ -50,7 +63,7 @@
         }
 
         .sidebar a:hover {
-            background: #4a034f;
+            background: var(--accent);
             padding-left: 30px;
         }
 
@@ -67,7 +80,7 @@
             font-size: 28px;
             font-weight: 600;
             margin-bottom: 20px;
-            color: #510550;
+            color: var(--primary);
         }
 
         /* Profile Card */
@@ -89,13 +102,13 @@
         /* Profile Icon */
         .profile-icon {
             font-size: 60px;
-            color: #5c0a60;
+            color: var(--secondary);
             margin-bottom: 20px;
         }
 
         .profile-card h3 {
             margin-bottom: 25px;
-            color: #4c074d;
+            color: var(--secondary);
         }
 
         .profile-card form {
@@ -115,12 +128,12 @@
         }
 
         .profile-card input:focus {
-            border-color: #4b0548;
+            border-color: var(--primary);
             outline: none;
         }
 
         .btn {
-            background: #510541;
+            background: var(--primary);
             color: white;
             padding: 12px;
             border: none;
@@ -131,13 +144,13 @@
         }
 
         .btn:hover {
-            background: #4a034f;
+            background: var(--accent);
             transform: translateY(-2px);
         }
 
         .message {
             text-align: center;
-            color: rgb(3, 18, 3);
+            color: var(--dark);
             margin-bottom: 15px;
             font-weight: 500;
         }
