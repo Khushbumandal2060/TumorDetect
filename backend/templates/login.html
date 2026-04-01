@@ -3,9 +3,10 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Login - Tumor Detection System</title>
+    <title>Login - TumorDetect</title>
     <!-- Google Font -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         * {
@@ -16,15 +17,22 @@
 
         body {
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(to right, #f8f9fa, #eef2f3);
+            background: #f1f5f9;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
         }
 
-        /* ---------- Navbar ---------- */
+        :root {
+            --primary: #1e3a8a;
+            --secondary: #7c3aed;
+            --accent: #490fa6;
+            --dark: #0f172a;
+            --light: #f1f5f9;
+        }
+
         .navbar {
-            background: #6a0572;
+            background: linear-gradient(90deg, var(--dark), var(--primary));
             padding: 15px 40px;
             display: flex;
             justify-content: space-between;
@@ -44,10 +52,11 @@
         }
 
         .navbar a:hover {
-            opacity: 0.8;
+            background: var(--secondary);
+            padding: 6px 10px;
+            border-radius: 5px;
         }
 
-        /* ---------- Main Section ---------- */
         .main {
             flex: 1;
             display: flex;
@@ -60,14 +69,14 @@
             background: white;
             padding: 35px;
             width: 380px;
-            border-radius: 10px;
+            border-radius: 15px;
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
         }
 
         .container h3 {
             text-align: center;
             margin-bottom: 25px;
-            color: #333;
+            color: var(--primary);
         }
 
         input[type="email"],
@@ -82,13 +91,40 @@
 
         input:focus {
             outline: none;
-            border-color: #6a0572;
+            border-color: var(--secondary);
+        }
+
+        .password-field {
+            position: relative;
+            width: 100%;
+        }
+
+        .password-field input {
+            width: 100%;
+            padding: 12px 40px 12px 12px;
+            /* extra right padding for the toggle */
+            margin-bottom: 15px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #555;
+            font-size: 14px;
+            user-select: none;
         }
 
         button {
             width: 100%;
             padding: 12px;
-            background: #6a0572;
+            background: linear-gradient(45deg, var(--secondary), var(--primary));
             color: white;
             border: none;
             border-radius: 6px;
@@ -98,7 +134,7 @@
         }
 
         button:hover {
-            background: #4a034f;
+            background: var(--accent);
         }
 
         .flash {
@@ -115,7 +151,7 @@
 
         .success {
             background: #d1e7dd;
-            color: #151d19;
+            color: #0f1311;
         }
 
         .login-links {
@@ -125,18 +161,13 @@
         }
 
         .login-links a {
-            color: #6a0572;
+            color: var(--primary);
             text-decoration: none;
             font-weight: 500;
         }
 
-        /* Footer */
-        footer {
-            background: #5f065d;
-            color: white;
-            text-align: center;
-            padding: 12px 0;
-            font-size: 14px;
+        .login-links a:hover {
+            color: var(--accent);
         }
 
         @media(max-width: 420px) {
@@ -177,7 +208,11 @@
             <!-- Login Form -->
             <form method="POST" action="{{ url_for('login') }}">
                 <input type="email" name="email" placeholder="Email Address" required>
-                <input type="password" name="password" placeholder="Password" required>
+
+                <div class="password-field">
+                    <input type="password" name="password" placeholder="Password" required id="password">
+                    <span class="toggle-password" onclick="togglePassword('password')">Show</span>
+                </div>
 
                 <!-- Remember Me -->
                 <div style="margin-bottom:15px;">
@@ -203,9 +238,21 @@
     </div>
 
     <!-- Footer -->
-    <footer>
-        © 2026 Brain Tumor Detection System | All Rights Reserved
-    </footer>
+    {% include 'footer.html' %}
+
+    <script>
+        function togglePassword(id) {
+            const input = document.getElementById(id);
+            const toggle = input.nextElementSibling;
+            if (input.type === "password") {
+                input.type = "text";
+                toggle.textContent = "Hide";
+            } else {
+                input.type = "password";
+                toggle.textContent = "Show";
+            }
+        }
+    </script>
 
 </body>
 
