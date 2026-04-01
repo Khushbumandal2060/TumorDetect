@@ -1,13 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <title>Admin Login</title>
+    <title>Admin Login - TumorDetect</title>
     <style>
-        /* Body styling */
+        :root {
+            --primary: #1e3a8a;
+            /* blue/navy */
+            --secondary: #7c3aed;
+            /* purple */
+            --accent: #115185;
+            /* green */
+            --dark: #0f172a;
+            --light: #f1f5f9;
+        }
+
         body {
             font-family: 'Arial', sans-serif;
-            background-color: #f4f7f9;
+            background-color: var(--light);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -15,72 +26,85 @@
             margin: 0;
         }
 
-        /* Form container */
         .container {
-            background-color: #fff;
+            background-color: white;
             padding: 40px 30px;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
             width: 100%;
             max-width: 400px;
             text-align: center;
         }
 
         h2 {
-            margin-bottom: 30px;
-            color: #333;
+            margin-bottom: 25px;
+            color: var(--primary);
         }
 
-        /* Input fields */
         input[type="email"],
         input[type="password"] {
-            width: 100%;
+            width: 92%;
             padding: 12px 15px;
             margin-bottom: 20px;
             border: 1px solid #ccc;
             border-radius: 8px;
             font-size: 16px;
+            transition: 0.3s;
         }
 
-        /* Submit button */
+        input:focus {
+            border-color: var(--secondary);
+            outline: none;
+            box-shadow: 0 0 5px rgba(126, 77, 211, 0.5);
+        }
+
         button {
             width: 100%;
             padding: 12px;
-            background-color: #4f0843;
+            background: linear-gradient(45deg, var(--secondary), var(--primary));
             border: none;
             color: white;
             font-size: 16px;
             border-radius: 8px;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: background 0.3s ease;
         }
 
         button:hover {
-            background-color: #0a0120;
+            background: var(--accent);
         }
 
-        /* Flash messages */
         .flash {
             margin-bottom: 20px;
             font-weight: bold;
-            color: red; /* Default error color */
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
         }
+
+        .flash.error {
+            background: #f8d7da;
+            color: #184e8f;
+        }
+
         .flash.success {
-            color: rgb(91, 8, 99);
+            background: #d1e7dd;
+            color: #2c6794;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h2>Admin Login</h2>
 
         <!-- Flash messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="flash {{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
         {% endwith %}
 
         <!-- Login form -->
@@ -91,4 +115,5 @@
         </form>
     </div>
 </body>
+
 </html>
