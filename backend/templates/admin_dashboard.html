@@ -1,26 +1,35 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <title>Admin Dashboard</title>
-
+    <meta charset="UTF-8">
+    <title>Admin Dashboard - TumorDetect</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
+        :root {
+            --primary: #1e3a8a;
+            --secondary: #7c3aed;
+            --accent: var(--secondary);
+            --light: #f1f5f9;
+            --dark: #0f172a;
+        }
+
         body {
             margin: 0;
-            font-family: Segoe UI, Arial;
-            background: #f4f6f9;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: var(--light);
         }
 
         .container {
             display: flex;
         }
 
+        /* Sidebar */
         .sidebar {
             width: 240px;
-            background: #450336;
+            background: linear-gradient(180deg, var(--primary), var(--secondary));
             color: white;
             min-height: 100vh;
             padding-top: 25px;
@@ -29,6 +38,7 @@
         .sidebar h2 {
             text-align: center;
             margin-bottom: 35px;
+            font-weight: 600;
         }
 
         .sidebar a {
@@ -40,10 +50,11 @@
         }
 
         .sidebar a:hover {
-            background: #4a034f;
+            background: var(--accent);
             padding-left: 30px;
         }
 
+        /* Main Content */
         .main {
             flex: 1;
             padding: 40px;
@@ -53,8 +64,10 @@
             font-size: 26px;
             font-weight: 600;
             margin-bottom: 20px;
+            color: var(--primary);
         }
 
+        /* Stat Cards */
         .cards {
             display: flex;
             gap: 20px;
@@ -62,25 +75,27 @@
         }
 
         .card {
-            background: white;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
             padding: 25px;
             border-radius: 10px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
             width: 200px;
             text-align: center;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
         }
 
         .card h3 {
             margin: 10px 0;
-            color: #4a0745;
+            font-size: 18px;
         }
 
+        /* Tables */
         table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 20px;
             background: white;
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-            margin-top: 20px;
         }
 
         th,
@@ -91,7 +106,7 @@
         }
 
         th {
-            background: #6a0572;
+            background: var(--primary);
             color: white;
         }
 
@@ -99,141 +114,119 @@
             border-radius: 6px;
         }
 
+        /* Delete Button */
         .delete-btn {
-            background: red;
+            background: var(--secondary);
             color: white;
             border: none;
             padding: 6px 12px;
             cursor: pointer;
             border-radius: 4px;
+            transition: 0.3s;
         }
 
         .delete-btn:hover {
-            background: darkred;
+            background: var(--accent);
+        }
+
+        @media (max-width: 900px) {
+            .cards {
+                flex-direction: column;
+                gap: 15px;
+            }
         }
     </style>
-
 </head>
 
 <body>
-
     <div class="container">
 
-        <!-- SIDEBAR -->
-
+        <!-- Sidebar -->
         <div class="sidebar">
-
             <h2>MRI AI</h2>
-
             <a href="{{ url_for('admin_dashboard') }}">
                 <i class="fa-solid fa-gauge"></i> Dashboard
             </a>
-
             <a href="{{ url_for('admin_logout') }}">
                 <i class="fa-solid fa-door-open"></i> Logout
             </a>
-
         </div>
 
-        <!-- MAIN -->
-
+        <!-- Main Content -->
         <div class="main">
+            <div class="header">Welcome Admin</div>
 
-            <div class="header">
-                Welcome Admin
-            </div>
-
-            <!-- STAT CARDS -->
-
+            <!-- Stat Cards -->
             <div class="cards">
-
                 <div class="card">
                     <i class="fa-solid fa-users fa-2x"></i>
                     <h3>Total Users</h3>
                     <p>{{ total_users }}</p>
                 </div>
-
                 <div class="card">
                     <i class="fa-solid fa-brain fa-2x"></i>
                     <h3>Total MRI Uploads</h3>
                     <p>{{ total_uploads }}</p>
                 </div>
-
             </div>
 
-
-            <!-- USERS TABLE -->
-
+            <!-- Users Table -->
             <h2>Registered Users</h2>
-
             <table>
-
                 <tr>
                     <th>ID</th>
                     <th>Username</th>
                     <th>Email</th>
                     <th>Action</th>
                 </tr>
-
                 {% for user in users %}
-
                 <tr>
-
                     <td>{{ user.id }}</td>
                     <td>{{ user.username }}</td>
                     <td>{{ user.email }}</td>
-
                     <td>
-                        <a href="{{ url_for('delete_user', user_id=user.id) }}">
-                            <button class="delete-btn">Delete</button>
-                        </a>
+                        <!-- Call JS confirmation function -->
+                        <button class="delete-btn"
+                            onclick="confirmDelete('{{ url_for('delete_user', user_id=user.id) }}')">Delete</button>
                     </td>
-
                 </tr>
-
                 {% endfor %}
-
             </table>
 
-
-            <!-- MRI HISTORY -->
-
+            <!-- MRI Upload History -->
             <h2>MRI Upload History</h2>
-
             <table>
-
                 <tr>
                     <th>User</th>
                     <th>Image</th>
                     <th>Prediction</th>
                     <th>Date</th>
                 </tr>
-
                 {% for upload in uploads %}
-
                 <tr>
-
                     <td>{{ upload.username }}</td>
-
                     <td>
                         <img src="{{ url_for('static', filename='uploads/' + upload.filename) }}" width="70">
                     </td>
-
                     <td>{{ upload.predicted_label }}</td>
-
                     <td>{{ upload.uploaded_at }}</td>
-
                 </tr>
-
                 {% endfor %}
-
             </table>
 
         </div>
-
     </div>
+
+    <!-- Scripts -->
+    <script>
+        // Confirm Delete
+        function confirmDelete(url) {
+            if (confirm("Are you sure you want to delete this user?")) {
+                window.location.href = url;
+            }
+        }
+    </script>
 
 </body>
 
 </html>
-
