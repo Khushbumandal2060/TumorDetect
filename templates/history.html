@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Upload History</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            /* navy */
+            --secondary: #7c3aed;
+            /* purple */
+            --accent: var(--secondary);
+            /* hover */
+            --light: #f1f5f9;
+            /* background */
+            --dark: #0f172a;
+            /* text dark */
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Arial;
+            background: var(--light);
+        }
+
+        .container-main {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 240px;
+            background: linear-gradient(180deg, var(--primary), var(--secondary));
+            color: white;
+            padding-top: 25px;
+        }
+
+        .sidebar h2 {
+            text-align: center;
+            margin-bottom: 35px;
+            font-weight: 600;
+        }
+
+        .sidebar a {
+            display: flex;
+            align-items: center;
+            color: white;
+            padding: 14px 25px;
+            text-decoration: none;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+
+        .sidebar a i {
+            margin-right: 12px;
+            font-size: 18px;
+        }
+
+        .sidebar a:hover {
+            background: var(--accent);
+            padding-left: 30px;
+        }
+
+        /* Main content */
+        .main {
+            flex: 1;
+            padding: 40px;
+        }
+
+        .header {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        /* Cards */
+        .card {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-img-top {
+            max-height: 200px;
+            object-fit: cover;
+        }
+
+        .card-body {
+            background: white;
+        }
+
+        .card-title {
+            color: var(--secondary);
+            font-weight: 600;
+        }
+
+        .card-text {
+            color: var(--dark);
+        }
+
+        /* Empty message */
+        .no-uploads {
+            color: var(--primary);
+            font-weight: 500;
+            font-size: 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-main">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h2>MRI AI</h2>
+            <a href="{{ url_for('dashboard') }}"><i class="fa-solid fa-house"></i>Dashboard</a>
+            <a href="{{ url_for('predict') }}"><i class="fa-solid fa-brain"></i>Predict MRI</a>
+            <a href="{{ url_for('history') }}"><i class="fa-solid fa-folder-open"></i>Upload History</a>
+            <a href="{{ url_for('profile') }}"><i class="fa-solid fa-user"></i>Profile</a>
+            <a href="{{ url_for('logout') }}"><i class="fa-solid fa-door-open"></i>Logout</a>
+        </div>
+
+        <!-- Main content -->
+        <div class="main">
+            <div class="header">Your Upload History</div>
+
+            {% if uploads %}
+            <div class="row">
+                {% for upload in uploads %}
+                <div class="col-md-4 mb-3">
+                    <div class="card shadow-sm">
+                        <img src="{{ url_for('static', filename='uploads/' ~ upload.filename) }}" class="card-img-top"
+                            alt="MRI Image">
+                        <div class="card-body">
+                            <h5 class="card-title">Prediction: {{ upload.predicted_label }}</h5>
+                            <p class="card-text"><i class="bi bi-clock"></i> {{ upload.uploaded_at }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="no-uploads">You haven't uploaded any MRI scans yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+
+</html>
