@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Verify OTP - TumorDetect</title>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --secondary: #7c3aed;
+            --accent: #062e6e;
+            --light: #f1f5f9;
+            --dark: #0f172a;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: var(--light);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            width: 350px;
+            text-align: center;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(45deg, var(--secondary), var(--primary));
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: var(--accent);
+        }
+
+        .flash {
+            padding: 10px;
+            margin-bottom: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #a61c40;
+        }
+
+        .success {
+            background: #d1e7dd;
+            color: #0f1311;
+        }
+
+        .timer {
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: var(--secondary);
+        }
+
+        a {
+            text-decoration: none;
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        a:hover {
+            color: var(--accent);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Verify OTP</h2>
+
+        <p class="timer">OTP expires in <span id="countdown">60</span> seconds</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('verify_otp') }}">
+            <input type="text" name="otp" placeholder="Enter OTP" required>
+            <button type="submit">Verify OTP</button>
+        </form>
+
+        <p style="margin-top: 15px;"><a href="{{ url_for('forgot_password') }}">Resend OTP</a></p>
+    </div>
+
+    <script>
+        let timeLeft = 60;
+        const countdown = document.getElementById('countdown');
+
+        const timer = setInterval(() => {
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                countdown.innerHTML = "Expired!";
+            } else {
+                countdown.innerHTML = timeLeft;
+            }
+            timeLeft -= 1;
+        }, 1000);
+    </script>
+</body>
+
+</html>
