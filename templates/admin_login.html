@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Login - TumorDetect</title>
+
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --secondary: #7c3aed;
+            --accent: #115185;
+            --dark: #0f172a;
+            --light: #f1f5f9;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--light);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: white;
+            padding: 40px 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        h2 {
+            margin-bottom: 25px;
+            color: var(--primary);
+        }
+
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: 0.3s;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            border-color: var(--secondary);
+            outline: none;
+            box-shadow: 0 0 5px rgba(126, 77, 211, 0.5);
+        }
+
+        .password-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        /* FORCE SAME STYLE AS EMAIL FIELD */
+        .password-wrapper input {
+            width: 100%;
+            padding: 12px 60px 12px 15px;
+            margin-bottom: 20px;
+            /* SAME AS EMAIL */
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: 0.3s;
+        }
+
+        /* SAME FOCUS STYLE */
+        .password-wrapper input:focus {
+            border-color: var(--secondary);
+            outline: none;
+            box-shadow: 0 0 5px rgba(126, 77, 211, 0.5);
+        }
+
+        /* TOGGLE DOES NOT AFFECT SIZE */
+        .toggle-password {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+
+            cursor: pointer;
+            color: grey;
+            font-size: 14px;
+            width: 50px;
+            text-align: center;
+            user-select: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(45deg, var(--secondary), var(--primary));
+            border: none;
+            color: white;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: var(--accent);
+        }
+
+        .flash {
+            margin-bottom: 20px;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .flash.error {
+            background: #f8d7da;
+            color: #184e8f;
+        }
+
+        .flash.success {
+            background: #d1e7dd;
+            color: #2c6794;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Admin Login</h2>
+
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- Login form -->
+        <form method="POST" action="{{ url_for('admin_login') }}">
+            <input type="email" name="email" placeholder="Admin Email" required>
+
+            <!-- Password field -->
+            <div class="password-wrapper">
+                <input type="password" id="password" name="password" placeholder="Password" required>
+                <span class="toggle-password" onclick="togglePassword()">Show</span>
+            </div>
+
+            <button type="submit">Login</button>
+        </form>
+    </div>
+
+    <!-- JS -->
+    <script>
+        function togglePassword() {
+            const password = document.getElementById("password");
+            const toggleText = document.querySelector(".toggle-password");
+
+            if (password.type === "password") {
+                password.type = "text";
+                toggleText.innerText = "Hide";
+            } else {
+                password.type = "password";
+                toggleText.innerText = "Show";
+            }
+        }
+    </script>
+
+</body>
+
+</html>
