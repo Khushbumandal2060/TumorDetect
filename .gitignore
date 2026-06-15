@@ -1,0 +1,25 @@
+venv/
+backend/.env
+backend/venv_tf
+__pycache__/
+*.pyc
+
+# Environment files (credentials)
+.env
+
+# SQLite database (local dev leftover)
+*.db
+
+# Uploaded MRI images (user data, not committed)
+static/uploads/*
+!static/uploads/.gitkeep
+
+# Large model weights
+*.h5
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+.DS_Store

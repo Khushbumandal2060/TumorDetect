@@ -140,8 +140,11 @@
                 {% for upload in uploads %}
                 <div class="col-md-4 mb-3">
                     <div class="card shadow-sm">
-                        <img src="{{ url_for('static', filename='uploads/' ~ upload.filename) }}" class="card-img-top"
-                            alt="MRI Image">
+                        {% if upload.filename.startswith('http') %}
+                        <img src="{{ upload.filename }}" class="card-img-top" alt="MRI Image">
+                        {% else %}
+                        <img src="{{ url_for('static', filename='uploads/' ~ upload.filename) }}" class="card-img-top" alt="MRI Image">
+                        {% endif %}
                         <div class="card-body">
                             <h5 class="card-title">Prediction: {{ upload.predicted_label }}</h5>
                             <p class="card-text"><i class="bi bi-clock"></i> {{ upload.uploaded_at }}</p>

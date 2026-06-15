@@ -1,0 +1,28 @@
+generator client {
+  provider = "prisma-client-py"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int         @id @default(autoincrement())
+  username      String
+  email         String      @unique
+  password_hash String
+  role          String      @default("user")
+  created_at    DateTime    @default(now())
+  uploads       MriUpload[]
+}
+
+model MriUpload {
+  id              Int      @id @default(autoincrement())
+  user_id         Int
+  filename        String
+  uploaded_at     DateTime @default(now())
+  predicted_label String
+  confidence      Float?
+  user            User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}

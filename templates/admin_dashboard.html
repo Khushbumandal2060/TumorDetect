@@ -177,6 +177,7 @@
                     <th>ID</th>
                     <th>Username</th>
                     <th>Email</th>
+                    <th>Role</th>
                     <th>Action</th>
                 </tr>
                 {% for user in users %}
@@ -184,6 +185,7 @@
                     <td>{{ user.id }}</td>
                     <td>{{ user.username }}</td>
                     <td>{{ user.email }}</td>
+                    <td>{{ user.role }}</td>
                     <td>
                         <!-- Call JS confirmation function -->
                         <button class="delete-btn"
@@ -200,15 +202,21 @@
                     <th>User</th>
                     <th>Image</th>
                     <th>Prediction</th>
+                    <th>Confidence</th>
                     <th>Date</th>
                 </tr>
                 {% for upload in uploads %}
                 <tr>
                     <td>{{ upload.username }}</td>
                     <td>
+                        {% if upload.filename.startswith('http') %}
+                        <img src="{{ upload.filename }}" width="70">
+                        {% else %}
                         <img src="{{ url_for('static', filename='uploads/' + upload.filename) }}" width="70">
+                        {% endif %}
                     </td>
                     <td>{{ upload.predicted_label }}</td>
+                    <td>{{ upload.confidence }}%</td>
                     <td>{{ upload.uploaded_at }}</td>
                 </tr>
                 {% endfor %}

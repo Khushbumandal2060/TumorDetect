@@ -1,54 +1,55 @@
-import tensorflow as tf
-from tensorflow.keras.models import load_model
-import numpy as np
-from tensorflow.keras.preprocessing import image
-from flask import Flask, render_template, request, redirect, url_for, flash, session
-from werkzeug.security import generate_password_hash, check_password_hash
-import sqlite3
+import asyncio
 import os
 import random
 import smtplib
-from email.message import EmailMessage
-from dotenv import load_dotenv
+import threading
+import uuid
+import requests
 from datetime import datetime, timedelta
+from email.message import EmailMessage
+
+import numpy as np
+from dotenv import load_dotenv
+from flask import Flask, render_template, request, redirect, url_for, flash, session
+from prisma import Prisma
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing import image
+from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
 # ---------------- AI MODEL PREDICTION ----------------
 def predict_tumor(img_path):
     try:
         img = image.load_img(img_path, target_size=(224, 224))
-        img_array = image.img_to_array(img) / 255.0
+        img_array = image.img_to_array(img)
+        img_array = img_array / 255.0
         img_array = np.expand_dims(img_array, axis=0)
 
-        prediction = model.predict(img_array)
-
-        classes = ['glioma', 'meningioma', 'no_tumor', 'pituitary']
-
+        prediction = model.predict(img_array)[0]  # [prob_no, prob_yes]
         class_index = np.argmax(prediction)
-        result = classes[class_index]
-        confidence = round(float(prediction[0][class_index]) * 100, 2)
+
+        if class_index == 1:
+            result = "Tumor Detected"
+            confidence = round(prediction[1] * 100, 2)
+        else:
+            result = "No Tumor"
+            confidence = round(prediction[0] * 100, 2)
 
         return result, confidence
-
     except Exception as e:
-        print("Prediction error:", e)
         return "Error", 0
-    
-# Load the model once at startup
+
 # Load environment variables
 load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-MODEL_PATH = os.path.join(BASE_DIR, "..", "model", "model.keras")
+# ─── Email credentials (used by contact form & password reset) ───
+EMAIL_ADDRESS = os.getenv("EMAIL_USER")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASS")
 
-# Normalize path (important on Windows)
-MODEL_PATH = os.path.abspath(MODEL_PATH)
-
-print("Loading model from:", MODEL_PATH)
-
-model = tf.keras.models.load_model(MODEL_PATH)
-
+MODEL_PATH = os.path.join(BASE_DIR, "brain_tumor_model.h5")
+model = load_model(MODEL_PATH)
 
 app = Flask(
     __name__,
@@ -59,51 +60,124 @@ app = Flask(
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "..", "static", "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-app.secret_key = os.getenv("SECRET_KEY") 
-# Make session permanent for 7 days if remember me checked
-app.permanent_session_lifetime = 604800  # 7 days in seconds
+app.secret_key = os.getenv("SECRET_KEY", "fallback-dev-key")
+app.permanent_session_lifetime = timedelta(days=7)
 
-DB_NAME = 'database.db'
+# ─── Upload limits ───
+MAX_UPLOAD_MB = int(os.getenv("MAX_UPLOAD_MB", "16"))
+app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
 
-# Get email credentials from .env
-EMAIL_ADDRESS = os.getenv("EMAIL_USER")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASS")
+# ─── Allowed upload extensions ───
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "bmp", "tiff"}
 
-# ---------------- DATABASE CONNECTION ----------------
-def get_db_connection():
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    return conn
 
-# ---------------- CREATE TABLE ----------------
-def create_table():
-    conn = get_db_connection()
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL,
-            email TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL
-    
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is required. Configure it to point at your Postgres database.")
+
+db = Prisma()
+
+# ─── Persistent event loop for async Prisma calls ───
+_loop = asyncio.new_event_loop()
+_loop_thread = threading.Thread(target=_loop.run_forever, daemon=True)
+_loop_thread.start()
+
+
+def run_db(operation):
+    """Run an async Prisma operation on the persistent background event loop."""
+    future = asyncio.run_coroutine_threadsafe(operation, _loop)
+    return future.result()
+
+
+def fetch_user_by_email(email):
+    return run_db(db.user.find_unique(where={"email": email}))
+
+
+def fetch_user_by_id(user_id):
+    return run_db(db.user.find_unique(where={"id": user_id}))
+
+
+def fetch_users():
+    return run_db(db.user.find_many())
+
+
+def fetch_uploads_for_user(user_id):
+    return run_db(db.mri_upload.find_many(where={"user_id": user_id}))
+
+
+def fetch_all_uploads():
+    return run_db(db.mri_upload.find_many())
+
+
+def seed_admin_user():
+    admin_email = os.getenv("ADMIN_SEED_EMAIL")
+    admin_password = os.getenv("ADMIN_SEED_PASSWORD")
+    admin_username = os.getenv("ADMIN_SEED_USERNAME", "Admin")
+
+    if not admin_email or not admin_password:
+        return
+
+    password_hash = generate_password_hash(admin_password)
+    existing_admin = fetch_user_by_email(admin_email)
+
+    if existing_admin:
+        run_db(
+            db.user.update(
+                where={"id": existing_admin.id},
+                data={
+                    "username": admin_username,
+                    "password_hash": password_hash,
+                    "role": "admin",
+                },
+            )
         )
-    """)
+        return
 
-    conn.execute("""
-    CREATE TABLE IF NOT EXISTS mri_uploads (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        filename TEXT,
-        uploaded_at TEXT,
-        predicted_label TEXT,
-        FOREIGN KEY(user_id) REFERENCES users(id)
+    run_db(
+        db.user.create(
+            data={
+                "username": admin_username,
+                "email": admin_email,
+                "password_hash": password_hash,
+                "role": "admin",
+            }
+        )
     )
-""")
 
-    conn.commit()
-    conn.close()
 
-create_table()
+def initialize_database():
+    run_db(db.connect())
+    seed_admin_user()
+
+
+try:
+    initialize_database()
+except Exception as e:
+    print(f"[WARNING] Database init failed: {e}")
+    print("The app will start but database features won't work until the DB is reachable.")
+
+
+def current_user():
+    user_id = session.get("user_id")
+    if not user_id:
+        return None
+    return fetch_user_by_id(user_id)
+
+
+def current_user_is_admin():
+    user = current_user()
+    return bool(user and getattr(user, "role", "user") == "admin")
+
+
+def require_admin_access():
+    if not current_user_is_admin():
+        flash("Please log in as admin!", "error")
+        return False
+    return True
 
 # ---------------- ROUTES ----------------
 @app.route('/')
@@ -164,20 +238,22 @@ def signup():
             flash("Passwords do not match!", "error")
             return redirect(url_for('signup'))
 
-        conn = get_db_connection()
-        existing_user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        existing_user = fetch_user_by_email(email)
         if existing_user:
-            conn.close()
             flash("Email already registered!", "error")
             return redirect(url_for('signup'))
 
         password_hash = generate_password_hash(password)
-        conn.execute(
-            "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
-            (username, email, password_hash)
+        run_db(
+            db.user.create(
+                data={
+                    "username": username,
+                    "email": email,
+                    "password_hash": password_hash,
+                    "role": "user",
+                }
+            )
         )
-        conn.commit()
-        conn.close()
 
         flash("Signup successful! You can now log in.", "success")
         return redirect(url_for('login'))
@@ -192,18 +268,22 @@ def login():
         password = request.form['password']
         remember = request.form.get('remember')
 
-        conn = get_db_connection()
-        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
-        conn.close()
+        user = fetch_user_by_email(email)
 
-        if user and check_password_hash(user['password'], password):
-            session['user_id'] = user['id']
-            session['username'] = user['username']
+        if user and check_password_hash(user.password_hash, password):
+            session['user_id'] = user.id
+            session['username'] = user.username
+            session['role'] = getattr(user, 'role', 'user')
 
             if remember:
                 session.permanent = True
 
-            flash(f"Welcome, {user['username']}!", "success")
+            if getattr(user, 'role', 'user') == 'admin':
+                session['admin_logged_in'] = True
+                flash(f"Welcome back, {user.username}!", "success")
+                return redirect(url_for('admin_dashboard'))
+
+            flash(f"Welcome, {user.username}!", "success")
             return redirect(url_for('dashboard'))
         else:
             flash("Invalid email or password!", "error")
@@ -217,19 +297,8 @@ def dashboard():
         flash("Please log in first!", "error")
         return redirect(url_for('login'))
 
-    conn = get_db_connection()
-
-    user = conn.execute(
-        "SELECT * FROM users WHERE id = ?",
-        (session['user_id'],)
-    ).fetchone()
-
-    uploads = conn.execute(
-        "SELECT * FROM mri_uploads WHERE user_id = ?",
-        (session['user_id'],)
-    ).fetchall()
-
-    conn.close()
+    user = fetch_user_by_id(session['user_id'])
+    uploads = fetch_uploads_for_user(session['user_id'])
 
     return render_template(
         'dashboard.html',
@@ -247,31 +316,65 @@ def predict():
 
     if request.method == 'POST':
         file = request.files.get('mri_image')
-        if not file:
+        if not file or file.filename == '':
             flash("Please upload an image.", "error")
             return redirect(request.url)
 
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(UPLOAD_FOLDER, filename)
+        if not allowed_file(file.filename):
+            flash("Invalid file type. Allowed: png, jpg, jpeg, gif, bmp, tiff", "error")
+            return redirect(request.url)
+
+        # UUID prefix prevents filename collisions between users
+        safe_name = secure_filename(file.filename)
+        unique_name = f"{uuid.uuid4().hex}_{safe_name}"
+        filepath = os.path.join(UPLOAD_FOLDER, unique_name)
         file.save(filepath)
 
         result, confidence = predict_tumor(filepath)
 
-        conn = get_db_connection()
-        uploaded_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # ─── UploadThing Integration ───
+        uploadthing_token = os.getenv("UPLOADTHING_TOKEN")
+        final_file_path = unique_name
+        
+        if uploadthing_token and uploadthing_token != "your_uploadthing_secret_token":
+            try:
+                headers = {
+                    "x-uploadthing-api-key": uploadthing_token,
+                    "x-uploadthing-version": "7"
+                }
+                with open(filepath, "rb") as f:
+                    ut_response = requests.post(
+                        "https://uploadthing.com/api/uploadFiles",
+                        headers=headers,
+                        files={"files": (safe_name, f)}
+                    )
+                if ut_response.status_code == 200:
+                    ut_data = ut_response.json()
+                    if ut_data and len(ut_data) > 0 and 'url' in ut_data[0]:
+                        final_file_path = ut_data[0]['url']
+                        
+                        # Optionally delete local file to save space
+                        # if os.path.exists(filepath):
+                        #     os.remove(filepath)
+            except Exception as e:
+                print(f"[WARNING] UploadThing upload failed: {e}")
 
-        conn.execute(
-            "INSERT INTO mri_uploads (user_id, filename, predicted_label, uploaded_at) VALUES (?, ?, ?, ?)",
-            (session['user_id'], filename, result, uploaded_at)
+        run_db(
+            db.mri_upload.create(
+                data={
+                    "user_id": session['user_id'],
+                    "filename": final_file_path,
+                    "predicted_label": result,
+                    "confidence": confidence,
+                    "uploaded_at": datetime.now(),
+                }
+            )
         )
-
-        conn.commit()
-        conn.close()
 
         return render_template(
             'predict.html',
             result=result,
-            filename=filename,
+            filename=final_file_path,
             confidence=confidence
         )
 
@@ -284,12 +387,7 @@ def history():
         flash("Please log in first!", "error")
         return redirect(url_for('login'))
 
-    conn = get_db_connection()
-    uploads = conn.execute(
-        "SELECT * FROM mri_uploads WHERE user_id = ? ORDER BY uploaded_at DESC",
-        (session['user_id'],)
-    ).fetchall()
-    conn.close()
+    uploads = fetch_uploads_for_user(session['user_id'])
 
     return render_template('history.html', uploads=uploads)
 
@@ -300,35 +398,37 @@ def profile():
         flash("Please log in first!", "error")
         return redirect(url_for('login'))
 
-    conn = get_db_connection()
-    user = conn.execute(
-        "SELECT * FROM users WHERE id = ?",
-        (session['user_id'],)
-    ).fetchone()
+    user = fetch_user_by_id(session['user_id'])
 
     if request.method == 'POST':
         username = request.form['username']
         email = request.form['email']
         password = request.form['password']
 
-        if password:  # Only update password if entered
-            hashed_password = generate_password_hash(password)
-            conn.execute(
-                "UPDATE users SET username = ?, email = ?, password = ? WHERE id = ?",
-                (username, email, hashed_password, session['user_id'])
-            )
-        else:
-            conn.execute(
-                "UPDATE users SET username = ?, email = ? WHERE id = ?",
-                (username, email, session['user_id'])
-            )
+        existing_user = fetch_user_by_email(email)
+        if existing_user and existing_user.id != session['user_id']:
+            flash("Email already registered!", "error")
+            return redirect(url_for('profile'))
 
-        conn.commit()
-        conn.close()
+        update_data = {
+            "username": username,
+            "email": email,
+        }
+
+        if password:  # Only update password if entered
+            update_data["password_hash"] = generate_password_hash(password)
+
+        run_db(
+            db.user.update(
+                where={"id": session['user_id']},
+                data=update_data,
+            )
+        )
+
+        session['username'] = username
         flash("Profile updated successfully!", "success")
         return redirect(url_for('profile'))
 
-    conn.close()
     return render_template('profile.html', user=user)
 
 # ---------------- LOGOUT ----------------
@@ -344,9 +444,7 @@ def forgot_password():
     if request.method == 'POST':
         email = request.form['email']
 
-        conn = get_db_connection()
-        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
-        conn.close()
+        user = fetch_user_by_email(email)
 
         if not user:
             flash("Email not registered!", "error")
@@ -422,19 +520,20 @@ def reset_password():
             flash("Password must be at least 6 characters long!", "error")
             return redirect(url_for('reset_password'))
 
-        conn = get_db_connection()
-        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        user = fetch_user_by_email(email)
 
         # Check if new password is same as old password
-        if user and check_password_hash(user['password'], password):
-            conn.close()
+        if user and check_password_hash(user.password_hash, password):
             flash("New password shouldn't match the old. Please choose a different password.", "error")
             return redirect(url_for('reset_password'))
 
         password_hash = generate_password_hash(password)
-        conn.execute("UPDATE users SET password = ? WHERE email = ?", (password_hash, email))
-        conn.commit()
-        conn.close()
+        run_db(
+            db.user.update(
+                where={"id": user.id},
+                data={"password_hash": password_hash},
+            )
+        )
 
         # Clear OTP session
         session.pop('otp', None)
@@ -446,10 +545,6 @@ def reset_password():
 
     return render_template('reset_password.html')
 
-# ---------------- ADMIN CREDENTIALS ----------------
-ADMIN_USERNAME = os.getenv("ADMIN_USER") 
-ADMIN_PASSWORD = os.getenv("ADMIN_PASS") 
-
 # ---------------- ADMIN LOGIN ----------------
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_login():
@@ -457,12 +552,17 @@ def admin_login():
         email = request.form['email']
         password = request.form['password']
 
-        if email == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+        user = fetch_user_by_email(email)
+
+        if user and getattr(user, 'role', 'user') == 'admin' and check_password_hash(user.password_hash, password):
+            session['user_id'] = user.id
+            session['username'] = user.username
+            session['role'] = user.role
             session['admin_logged_in'] = True
             flash("Admin logged in successfully!", "success")
             return redirect(url_for('admin_dashboard'))
         else:
-            flash("Invalid admin credentials!", "error")
+            flash("Invalid admin credentials or insufficient privileges!", "error")
             return redirect(url_for('admin_login'))
 
     return render_template('admin_login.html')
@@ -470,53 +570,48 @@ def admin_login():
 # ---------------- ADMIN DASHBOARD ----------------
 @app.route('/admin/dashboard')
 def admin_dashboard():
-    if not session.get('admin_logged_in'):
+    if not require_admin_access():
         return redirect(url_for('admin_login'))
 
-    conn = get_db_connection()
-
-    users = conn.execute(
-        "SELECT id, username, email FROM users"
-    ).fetchall()
-
-    uploads = conn.execute(
-        """
-        SELECT mri_uploads.*, users.username 
-        FROM mri_uploads
-        JOIN users ON mri_uploads.user_id = users.id
-        ORDER BY uploaded_at DESC
-        """
-    ).fetchall()
-
-    total_users = conn.execute(
-        "SELECT COUNT(*) FROM users"
-    ).fetchone()[0]
-
-    total_uploads = conn.execute(
-        "SELECT COUNT(*) FROM mri_uploads"
-    ).fetchone()[0]
-
-    conn.close()
+    users = fetch_users()
+    uploads = fetch_all_uploads()
+    user_lookup = {user.id: user.username for user in users}
+    users_view = [
+        {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "role": getattr(user, 'role', 'user'),
+        }
+        for user in users
+    ]
+    uploads_view = [
+        {
+            "id": upload.id,
+            "username": user_lookup.get(upload.user_id, "Unknown"),
+            "filename": upload.filename,
+            "predicted_label": upload.predicted_label,
+            "confidence": getattr(upload, 'confidence', None),
+            "uploaded_at": upload.uploaded_at,
+        }
+        for upload in sorted(uploads, key=lambda entry: entry.uploaded_at, reverse=True)
+    ]
 
     return render_template(
         'admin_dashboard.html',
-        users=users,
-        uploads=uploads,
-        total_users=total_users,
-        total_uploads=total_uploads
+        users=users_view,
+        uploads=uploads_view,
+        total_users=len(users_view),
+        total_uploads=len(uploads_view)
     )
 
 # ---------------- DELETE USER ----------------
 @app.route('/admin/delete_user/<int:user_id>')
 def delete_user(user_id):
-    if not session.get('admin_logged_in'):
-        flash("Please log in as admin!", "error")
+    if not require_admin_access():
         return redirect(url_for('admin_login'))
 
-    conn = get_db_connection()
-    conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
-    conn.commit()
-    conn.close()
+    run_db(db.user.delete(where={"id": user_id}))
 
     flash("User deleted successfully!", "success")
     return redirect(url_for('admin_dashboard'))
@@ -524,10 +619,10 @@ def delete_user(user_id):
 # ---------------- ADMIN LOGOUT ----------------
 @app.route('/admin/logout')
 def admin_logout():
-    session.pop('admin_logged_in', None)
+    session.clear()
     flash("Admin logged out successfully!", "success")
     return redirect(url_for('admin_login'))
 
 # ---------------- RUN APP ----------------
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=os.getenv("FLASK_DEBUG", "0") == "1")

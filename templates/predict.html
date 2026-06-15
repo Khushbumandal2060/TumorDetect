@@ -172,7 +172,11 @@
                 </p>
 
                 {% if filename %}
+                {% if filename.startswith('http') %}
+                <img src="{{ filename }}" class="uploaded">
+                {% else %}
                 <img src="{{ url_for('static', filename='uploads/' + filename) }}" class="uploaded">
+                {% endif %}
                 {% endif %}
             </div>
             {% endif %}
