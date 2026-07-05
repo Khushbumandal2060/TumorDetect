@@ -69,11 +69,43 @@ load_dotenv()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ─── Email credentials (used by contact form & password reset) ───
-EMAIL_ADDRESS = os.getenv("EMAIL_USER")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASS")
+EMAIL_ADDRESS = os.getenv("EMAIL_USER") or os.getenv("EMAIL_ADDRESS")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASS") or os.getenv("EMAIL_PASSWORD")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "465"))
+EMAIL_STARTTLS = os.getenv("EMAIL_STARTTLS", "0") == "1"
 
 MODEL_PATH = os.path.join(BASE_DIR, "brain_tumor_model.h5")
 model = None
+
+
+def send_email(to_email, subject, body):
+    if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
+        print(f"[EMAIL-FALLBACK] To: {to_email}\nSubject: {subject}\nBody:\n{body}")
+        return {"ok": True, "fallback": True, "message": "Email not configured; message logged to console."}
+
+    try:
+        msg = EmailMessage()
+        msg["Subject"] = subject
+        msg["From"] = EMAIL_ADDRESS
+        msg["To"] = to_email
+        msg.set_content(body)
+
+        if EMAIL_PORT == 465:
+            with smtplib.SMTP_SSL(EMAIL_HOST, EMAIL_PORT) as smtp:
+                smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+                smtp.send_message(msg)
+        else:
+            with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as smtp:
+                if EMAIL_STARTTLS:
+                    smtp.starttls()
+                smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+                smtp.send_message(msg)
+
+        return {"ok": True, "fallback": False}
+    except Exception as e:
+        print(f"[EMAIL-SEND-ERROR] {e}")
+        return {"ok": False, "error": str(e)}
 
 app = Flask(
     __name__,
@@ -222,26 +254,22 @@ def send_message():
     email = request.form['email']
     message = request.form['message']
 
-    msg = EmailMessage()
-    msg['Subject'] = f"New Contact Form Message from {name}"
-    msg['From'] = EMAIL_ADDRESS   # Your admin email
-    msg['To'] = EMAIL_ADDRESS     # Admin receives it
-    msg.set_content(f"""
-    You have received a new message from your website contact form.
+    body = f"""
+You have received a new message from your website contact form.
 
-    Name: {name}
-    Email: {email}
-    Message:
-    {message}
-    """)
+Name: {name}
+Email: {email}
+Message:
+{message}
+"""
 
-    try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-            smtp.send_message(msg)
+    mail_result = send_email(EMAIL_ADDRESS or email, f"New Contact Form Message from {name}", body)
+    if mail_result.get("fallback"):
+        flash("Your message was recorded locally because email is not configured yet. Set EMAIL_USER and EMAIL_PASS in .env to send it for real.", "warning")
+    elif mail_result["ok"]:
         flash("Your message has been sent successfully!", "success")
-    except Exception as e:
-        flash(f"Failed to send message. Error: {e}", "error")
+    else:
+        flash(f"Failed to send message. Error: {mail_result['error']}", "error")
 
     return redirect(url_for('contact'))
 
@@ -479,23 +507,16 @@ def forgot_password():
         session['reset_email'] = email
         session['otp_time'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # OTP timestamp
 
-        try:
-            msg = EmailMessage()
-            msg['Subject'] = 'Brain Tumor Detection - Password Reset OTP'
-            msg['From'] = EMAIL_ADDRESS
-            msg['To'] = email
-            msg.set_content(f'Your OTP for password reset is: {otp}')
-
-            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-                smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-                smtp.send_message(msg)
-
+        mail_result = send_email(email, 'Brain Tumor Detection - Password Reset OTP', f'Your OTP for password reset is: {otp}')
+        if mail_result.get("fallback"):
+            flash(f"Email is not configured yet. Your OTP is {otp}. Use it to continue.", "warning")
+        elif mail_result["ok"]:
             flash("OTP sent to your email. Check inbox.", "success")
-            return redirect(url_for('verify_otp'))
-
-        except Exception as e:
-            flash(f"Failed to send email: {e}", "error")
+        else:
+            flash(f"Failed to send email: {mail_result['error']}", "error")
             return redirect(url_for('forgot_password'))
+
+        return redirect(url_for('verify_otp'))
 
     return render_template('forgot_password.html')
 
