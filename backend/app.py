@@ -106,11 +106,11 @@ def fetch_users():
 
 
 def fetch_uploads_for_user(user_id):
-    return run_db(db.mri_upload.find_many(where={"user_id": user_id}))
+    return run_db(db.mriupload.find_many(where={"user_id": user_id}))
 
 
 def fetch_all_uploads():
-    return run_db(db.mri_upload.find_many())
+    return run_db(db.mriupload.find_many())
 
 
 def seed_admin_user():
@@ -360,7 +360,7 @@ def predict():
                 print(f"[WARNING] UploadThing upload failed: {e}")
 
         run_db(
-            db.mri_upload.create(
+            db.mriupload.create(
                 data={
                     "user_id": session['user_id'],
                     "filename": final_file_path,

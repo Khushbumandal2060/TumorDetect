@@ -16,6 +16,7 @@ static/uploads/*
 
 # Large model weights
 *.h5
+!backend/brain_tumor_model.h5
 
 # IDE / OS
 .vscode/
