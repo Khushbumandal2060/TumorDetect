@@ -12,20 +12,44 @@ import numpy as np
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from prisma import Prisma
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing import image
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
+try:
+    from tensorflow.keras.models import load_model as tf_load_model
+    from tensorflow.keras.preprocessing import image as tf_image
+except Exception as e:
+    tf_load_model = None
+    tf_image = None
+    TENSORFLOW_IMPORT_ERROR = str(e)
+else:
+    TENSORFLOW_IMPORT_ERROR = None
+
 # ---------------- AI MODEL PREDICTION ----------------
+def load_ml_model():
+    global model
+    if model is not None:
+        return model
+
+    if tf_load_model is None or tf_image is None:
+        raise RuntimeError(f"TensorFlow model unavailable: {TENSORFLOW_IMPORT_ERROR}")
+
+    model = tf_load_model(MODEL_PATH)
+    return model
+
+
 def predict_tumor(img_path):
     try:
-        img = image.load_img(img_path, target_size=(224, 224))
-        img_array = image.img_to_array(img)
+        if tf_image is None:
+            return "Prediction unavailable", 0
+
+        loaded_model = load_ml_model()
+        img = tf_image.load_img(img_path, target_size=(224, 224))
+        img_array = tf_image.img_to_array(img)
         img_array = img_array / 255.0
         img_array = np.expand_dims(img_array, axis=0)
 
-        prediction = model.predict(img_array)[0]  # [prob_no, prob_yes]
+        prediction = loaded_model.predict(img_array)[0]  # [prob_no, prob_yes]
         class_index = np.argmax(prediction)
 
         if class_index == 1:
@@ -37,7 +61,7 @@ def predict_tumor(img_path):
 
         return result, confidence
     except Exception as e:
-        return "Error", 0
+        return "Prediction unavailable", 0
 
 # Load environment variables
 load_dotenv()
@@ -49,7 +73,7 @@ EMAIL_ADDRESS = os.getenv("EMAIL_USER")
 EMAIL_PASSWORD = os.getenv("EMAIL_PASS")
 
 MODEL_PATH = os.path.join(BASE_DIR, "brain_tumor_model.h5")
-model = load_model(MODEL_PATH)
+model = None
 
 app = Flask(
     __name__,
