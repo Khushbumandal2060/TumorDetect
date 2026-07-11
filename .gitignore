@@ -1,5 +1,6 @@
 venv/
-backend/.env
+.env
+.env.example
 backend/venv_tf
 __pycache__/
 *.pyc
@@ -24,3 +25,6 @@ static/uploads/*
 *.swp
 Thumbs.db
 .DS_Store
+
+# Training dataset (large, only needed for notebook/train_model.py — not the running app)
+dataset/
