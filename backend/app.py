@@ -245,7 +245,7 @@ def aboutus():
 
 @app.route('/contact')
 def contact():
-    return render_template('contactus.html')
+    return render_template('contact.html')
 
 @app.route('/send_message', methods=['POST'])
 def send_message():
