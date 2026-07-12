@@ -46,7 +46,6 @@ def predict_tumor(img_path):
         loaded_model = load_ml_model()
         img = tf_image.load_img(img_path, target_size=(224, 224))
         img_array = tf_image.img_to_array(img)
-        img_array = img_array / 255.0
         img_array = np.expand_dims(img_array, axis=0)
 
         prediction = loaded_model.predict(img_array)[0]  # [prob_no, prob_yes]
@@ -54,10 +53,10 @@ def predict_tumor(img_path):
 
         if class_index == 1:
             result = "Tumor Detected"
-            confidence = round(prediction[1] * 100, 2)
+            confidence = float(round(prediction[1] * 100, 2))
         else:
             result = "No Tumor"
-            confidence = round(prediction[0] * 100, 2)
+            confidence = float(round(prediction[0] * 100, 2))
 
         return result, confidence
     except Exception as e:
@@ -310,7 +309,7 @@ def signup():
         flash("Signup successful! You can now log in.", "success")
         return redirect(url_for('login'))
 
-    return render_template('signup.html')
+    return render_template('user/signup.html')
 
 # ---------------- LOGIN ----------------
 @app.route('/login', methods=['GET', 'POST'])
@@ -341,7 +340,7 @@ def login():
             flash("Invalid email or password!", "error")
             return redirect(url_for('login'))
 
-    return render_template('login.html')
+    return render_template('user/login.html')
 
 @app.route('/dashboard')
 def dashboard():
@@ -353,7 +352,7 @@ def dashboard():
     uploads = fetch_uploads_for_user(session['user_id'])
 
     return render_template(
-        'dashboard.html',
+        'user/dashboard.html',
         user=user,
         uploads=uploads,
         total_uploads=len(uploads)
@@ -424,13 +423,13 @@ def predict():
         )
 
         return render_template(
-            'predict.html',
+            'user/predict.html',
             result=result,
             filename=final_file_path,
             confidence=confidence
         )
 
-    return render_template('predict.html')
+    return render_template('user/predict.html')
 
 #-----------------UPLOAD HISTORY----------------
 @app.route('/history')
@@ -441,7 +440,7 @@ def history():
 
     uploads = fetch_uploads_for_user(session['user_id'])
 
-    return render_template('history.html', uploads=uploads)
+    return render_template('user/history.html', uploads=uploads)
 
 #---------PROFILE-----
 @app.route('/profile', methods=['GET', 'POST'])
@@ -481,7 +480,7 @@ def profile():
         flash("Profile updated successfully!", "success")
         return redirect(url_for('profile'))
 
-    return render_template('profile.html', user=user)
+    return render_template('user/profile.html', user=user)
 
 # ---------------- LOGOUT ----------------
 @app.route('/logout')
@@ -518,7 +517,7 @@ def forgot_password():
 
         return redirect(url_for('verify_otp'))
 
-    return render_template('forgot_password.html')
+    return render_template('user/forgot_password.html')
 
 # ---------------- VERIFY OTP ----------------
 @app.route('/verify_otp', methods=['GET', 'POST'])
@@ -543,7 +542,7 @@ def verify_otp():
                 flash("Invalid OTP. Try again.", "error")
                 return redirect(url_for('verify_otp'))
 
-    return render_template('verify_otp.html')
+    return render_template('user/verify_otp.html')
 
 # ---------------- RESET PASSWORD ----------------
 @app.route('/reset_password', methods=['GET', 'POST'])
@@ -588,7 +587,7 @@ def reset_password():
         flash("Password reset successful! You can login now.", "success")
         return redirect(url_for('login'))
 
-    return render_template('reset_password.html')
+    return render_template('user/reset_password.html')
 
 # ---------------- ADMIN LOGIN ----------------
 @app.route('/admin', methods=['GET', 'POST'])
@@ -610,7 +609,7 @@ def admin_login():
             flash("Invalid admin credentials or insufficient privileges!", "error")
             return redirect(url_for('admin_login'))
 
-    return render_template('admin_login.html')
+    return render_template('admin/admin_login.html')
 
 # ---------------- ADMIN DASHBOARD ----------------
 @app.route('/admin/dashboard')
@@ -643,7 +642,7 @@ def admin_dashboard():
     ]
 
     return render_template(
-        'admin_dashboard.html',
+        'admin/admin_dashboard.html',
         users=users_view,
         uploads=uploads_view,
         total_users=len(users_view),
