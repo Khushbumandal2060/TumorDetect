@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from email.message import EmailMessage
 
 import numpy as np
+from PIL import Image as PILImage
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from prisma import Prisma
@@ -38,25 +39,76 @@ def load_ml_model():
     return model
 
 
+def load_class_labels():
+    """Load the index->class-name mapping produced during training (classes.json)."""
+    global class_labels
+    if class_labels is not None:
+        return class_labels
+    try:
+        import json
+        with open(CLASS_LABELS_PATH, "r") as f:
+            # json keys are always strings, so convert back to int keys
+            raw = json.load(f)
+            class_labels = {int(k): v for k, v in raw.items()}
+    except Exception:
+        # Fallback matches the mapping printed during this project's training run
+        class_labels = {0: "glioma", 1: "meningioma", 2: "no_tumor", 3: "pituitary"}
+    return class_labels
+
+
+def is_likely_mri(img_path, saturation_threshold=25):
+    """
+    Heuristic check only: brain MRI scans are near-grayscale (each pixel's
+    R, G, B values are almost identical). Ordinary photos (selfies, scenery,
+    documents, etc.) have far more color separation between channels.
+
+    This is NOT a trained classifier -- it's a quick sanity check that catches
+    obviously-wrong uploads (color photos of people/places/objects). It will
+    NOT catch every non-MRI image (e.g. a grayscale photo of something else
+    could still slip through). A proper fix would be training a dedicated
+    "is this a brain MRI" model on real negative examples.
+    """
+    try:
+        img = PILImage.open(img_path).convert("RGB")
+        img_small = img.resize((64, 64))
+        pixels = np.array(img_small).astype(int)
+        r, g, b = pixels[:, :, 0], pixels[:, :, 1], pixels[:, :, 2]
+        channel_diff = (np.abs(r - g) + np.abs(g - b) + np.abs(r - b)) / 3
+        avg_diff = channel_diff.mean()
+        return avg_diff < saturation_threshold
+    except Exception:
+        # If we can't even open/check the image, let the normal upload
+        # validation (allowed_file / Flask's image loading) surface the error.
+        return True
+
+
 def predict_tumor(img_path):
     try:
         if tf_image is None:
             return "Prediction unavailable", 0
 
+        if not is_likely_mri(img_path):
+            return "INVALID_IMAGE", 0
+
         loaded_model = load_ml_model()
+        labels = load_class_labels()
+
         img = tf_image.load_img(img_path, target_size=(224, 224))
         img_array = tf_image.img_to_array(img)
+        img_array = img_array / 255.0  # match training preprocessing (ImageDataGenerator rescale=1./255)
         img_array = np.expand_dims(img_array, axis=0)
 
-        prediction = loaded_model.predict(img_array)[0]  # [prob_no, prob_yes]
-        class_index = np.argmax(prediction)
+        prediction = loaded_model.predict(img_array)[0]  # probabilities per class
+        class_index = int(np.argmax(prediction))
+        confidence = float(round(prediction[class_index] * 100, 2))
+        predicted_class = labels.get(class_index, f"class_{class_index}")
 
-        if class_index == 1:
-            result = "Tumor Detected"
-            confidence = float(round(prediction[1] * 100, 2))
-        else:
+        if predicted_class == "no_tumor":
             result = "No Tumor"
-            confidence = float(round(prediction[0] * 100, 2))
+        else:
+            # Turn e.g. "meningioma" into "Meningioma" for display
+            tumor_type = predicted_class.replace("_", " ").title()
+            result = f"Tumor Detected: {tumor_type}"
 
         return result, confidence
     except Exception as e:
@@ -75,7 +127,9 @@ EMAIL_PORT = int(os.getenv("EMAIL_PORT", "465"))
 EMAIL_STARTTLS = os.getenv("EMAIL_STARTTLS", "0") == "1"
 
 MODEL_PATH = os.path.join(BASE_DIR, "brain_tumor_model.h5")
+CLASS_LABELS_PATH = os.path.join(BASE_DIR, "classes.json")
 model = None
+class_labels = None
 
 
 def send_email(to_email, subject, body):
@@ -383,10 +437,16 @@ def predict():
 
         result, confidence = predict_tumor(filepath)
 
+        if result == "INVALID_IMAGE":
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            flash("This doesn't look like a brain MRI scan. Please upload a valid MRI image.", "error")
+            return redirect(request.url)
+
         # ─── UploadThing Integration ───
         uploadthing_token = os.getenv("UPLOADTHING_TOKEN")
         final_file_path = unique_name
-        
+
         if uploadthing_token and uploadthing_token != "your_uploadthing_secret_token":
             try:
                 headers = {
@@ -403,7 +463,7 @@ def predict():
                     ut_data = ut_response.json()
                     if ut_data and len(ut_data) > 0 and 'url' in ut_data[0]:
                         final_file_path = ut_data[0]['url']
-                        
+
                         # Optionally delete local file to save space
                         # if os.path.exists(filepath):
                         #     os.remove(filepath)
