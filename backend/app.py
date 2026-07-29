@@ -1,5 +1,11 @@
 import asyncio
 import os
+
+# Set Prisma binary cache directory to project root's .binaries folder before importing Prisma
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if "PRISMA_BINARY_CACHE_DIR" not in os.environ:
+    os.environ["PRISMA_BINARY_CACHE_DIR"] = os.path.abspath(os.path.join(BASE_DIR, "..", ".binaries"))
+
 import random
 import smtplib
 import threading
@@ -115,9 +121,8 @@ def predict_tumor(img_path):
         return "Prediction unavailable", 0
 
 # Load environment variables
-load_dotenv()
+load_dotenv(os.path.join(BASE_DIR, "..", ".env"))
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ─── Email credentials (used by contact form & password reset) ───
 EMAIL_ADDRESS = os.getenv("EMAIL_USER") or os.getenv("EMAIL_ADDRESS")
@@ -196,8 +201,16 @@ _loop_thread = threading.Thread(target=_loop.run_forever, daemon=True)
 _loop_thread.start()
 
 
+def ensure_connected():
+    """Ensure the Prisma client is connected on the background event loop."""
+    if not db.is_connected():
+        future = asyncio.run_coroutine_threadsafe(db.connect(), _loop)
+        future.result()
+
+
 def run_db(operation):
     """Run an async Prisma operation on the persistent background event loop."""
+    ensure_connected()
     future = asyncio.run_coroutine_threadsafe(operation, _loop)
     return future.result()
 
@@ -259,7 +272,7 @@ def seed_admin_user():
 
 
 def initialize_database():
-    run_db(db.connect())
+    ensure_connected()
     seed_admin_user()
 
 
@@ -275,6 +288,16 @@ def current_user():
     if not user_id:
         return None
     return fetch_user_by_id(user_id)
+
+
+def require_user_session():
+    """Ensure a user exists for the current session, clearing it if not found."""
+    user = current_user()
+    if not user:
+        session.clear()
+        flash("Please log in first!", "error")
+        return None
+    return user
 
 
 def current_user_is_admin():
@@ -398,12 +421,11 @@ def login():
 
 @app.route('/dashboard')
 def dashboard():
-    if 'user_id' not in session:
-        flash("Please log in first!", "error")
+    user = require_user_session()
+    if not user:
         return redirect(url_for('login'))
 
-    user = fetch_user_by_id(session['user_id'])
-    uploads = fetch_uploads_for_user(session['user_id'])
+    uploads = fetch_uploads_for_user(user.id)
 
     return render_template(
         'user/dashboard.html',
@@ -415,8 +437,8 @@ def dashboard():
 #------------PREDICT MRI IMAGE----------------
 @app.route('/predict', methods=['GET', 'POST'])
 def predict():
-    if 'user_id' not in session:
-        flash("Please log in first!", "error")
+    user = require_user_session()
+    if not user:
         return redirect(url_for('login'))
 
     if request.method == 'POST':
@@ -473,7 +495,7 @@ def predict():
         run_db(
             db.mriupload.create(
                 data={
-                    "user_id": session['user_id'],
+                    "user_id": user.id,
                     "filename": final_file_path,
                     "predicted_label": result,
                     "confidence": confidence,
@@ -494,22 +516,20 @@ def predict():
 #-----------------UPLOAD HISTORY----------------
 @app.route('/history')
 def history():
-    if 'user_id' not in session:
-        flash("Please log in first!", "error")
+    user = require_user_session()
+    if not user:
         return redirect(url_for('login'))
 
-    uploads = fetch_uploads_for_user(session['user_id'])
+    uploads = fetch_uploads_for_user(user.id)
 
     return render_template('user/history.html', uploads=uploads)
 
 #---------PROFILE-----
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
-    if 'user_id' not in session:
-        flash("Please log in first!", "error")
+    user = require_user_session()
+    if not user:
         return redirect(url_for('login'))
-
-    user = fetch_user_by_id(session['user_id'])
 
     if request.method == 'POST':
         username = request.form['username']
@@ -517,7 +537,7 @@ def profile():
         password = request.form['password']
 
         existing_user = fetch_user_by_email(email)
-        if existing_user and existing_user.id != session['user_id']:
+        if existing_user and existing_user.id != user.id:
             flash("Email already registered!", "error")
             return redirect(url_for('profile'))
 
@@ -531,7 +551,7 @@ def profile():
 
         run_db(
             db.user.update(
-                where={"id": session['user_id']},
+                where={"id": user.id},
                 data=update_data,
             )
         )
@@ -565,10 +585,16 @@ def forgot_password():
         session['otp'] = str(otp)
         session['reset_email'] = email
         session['otp_time'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # OTP timestamp
+        session['otp_attempts'] = 0
+        session['otp_verified'] = False
 
         mail_result = send_email(email, 'Brain Tumor Detection - Password Reset OTP', f'Your OTP for password reset is: {otp}')
         if mail_result.get("fallback"):
-            flash(f"Email is not configured yet. Your OTP is {otp}. Use it to continue.", "warning")
+            if app.debug:
+                flash(f"Email is not configured yet. Your OTP is {otp}. Use it to continue.", "warning")
+            else:
+                flash("Email service is temporarily unavailable. Please try again later or contact support.", "error")
+                return redirect(url_for('forgot_password'))
         elif mail_result["ok"]:
             flash("OTP sent to your email. Check inbox.", "success")
         else:
@@ -582,6 +608,10 @@ def forgot_password():
 # ---------------- VERIFY OTP ----------------
 @app.route('/verify_otp', methods=['GET', 'POST'])
 def verify_otp():
+    if not session.get('reset_email') or not session.get('otp'):
+        flash("Please request password reset first.", "error")
+        return redirect(url_for('forgot_password'))
+
     if request.method == 'POST':
         entered_otp = request.form['otp']
 
@@ -592,13 +622,25 @@ def verify_otp():
                 session.pop('otp', None)
                 session.pop('otp_time', None)
                 session.pop('reset_email', None)
+                session.pop('otp_attempts', None)
+                session.pop('otp_verified', None)
                 flash("OTP expired. Please request a new one.", "error")
                 return redirect(url_for('forgot_password'))
 
             if session['otp'] == entered_otp:
+                session['otp_verified'] = True
                 flash("OTP verified! Reset your password.", "success")
                 return redirect(url_for('reset_password'))
             else:
+                session['otp_attempts'] = session.get('otp_attempts', 0) + 1
+                if session['otp_attempts'] >= 5:
+                    session.pop('otp', None)
+                    session.pop('otp_time', None)
+                    session.pop('reset_email', None)
+                    session.pop('otp_attempts', None)
+                    session.pop('otp_verified', None)
+                    flash("Too many failed attempts. Please request a new OTP.", "error")
+                    return redirect(url_for('forgot_password'))
                 flash("Invalid OTP. Try again.", "error")
                 return redirect(url_for('verify_otp'))
 
@@ -607,14 +649,14 @@ def verify_otp():
 # ---------------- RESET PASSWORD ----------------
 @app.route('/reset_password', methods=['GET', 'POST'])
 def reset_password():
+    if not session.get('otp_verified') or not session.get('reset_email'):
+        flash("Access denied. Please verify OTP first.", "error")
+        return redirect(url_for('forgot_password'))
+
     if request.method == 'POST':
         password = request.form['password']
         confirm_password = request.form['confirm_password']
         email = session.get('reset_email')
-
-        if not email:
-            flash("Session expired. Please request a new OTP.", "error")
-            return redirect(url_for('forgot_password'))
 
         if password != confirm_password:
             flash("Passwords do not match!", "error")
@@ -643,6 +685,8 @@ def reset_password():
         session.pop('otp', None)
         session.pop('otp_time', None)
         session.pop('reset_email', None)
+        session.pop('otp_verified', None)
+        session.pop('otp_attempts', None)
 
         flash("Password reset successful! You can login now.", "success")
         return redirect(url_for('login'))
@@ -715,9 +759,12 @@ def delete_user(user_id):
     if not require_admin_access():
         return redirect(url_for('admin_login'))
 
-    run_db(db.user.delete(where={"id": user_id}))
+    try:
+        run_db(db.user.delete(where={"id": user_id}))
+        flash("User deleted successfully!", "success")
+    except Exception as e:
+        flash(f"Error deleting user: {e}", "error")
 
-    flash("User deleted successfully!", "success")
     return redirect(url_for('admin_dashboard'))
 
 # ---------------- ADMIN LOGOUT ----------------
