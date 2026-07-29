@@ -3,8 +3,6 @@ import os
 
 # Set Prisma binary cache directory to project root's .binaries folder before importing Prisma
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-if "PRISMA_BINARY_CACHE_DIR" not in os.environ:
-    os.environ["PRISMA_BINARY_CACHE_DIR"] = os.path.abspath(os.path.join(BASE_DIR, "..", ".binaries"))
 
 import random
 import smtplib
