@@ -28,3 +28,7 @@ Thumbs.db
 
 # Training dataset (large, only needed for notebook/train_model.py — not the running app)
 dataset/
+
+# Prisma binary cache folder
+.binaries/
+
